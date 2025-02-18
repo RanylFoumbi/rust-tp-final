@@ -1,9 +1,9 @@
-use iced::{
-    widget::{Container, Text},
-    Element, Length, Settings, Theme,
-    Application, Command, executor, Font
-};
 use crate::map::Map;
+use iced::{
+    executor,
+    widget::{Container, Text},
+    Application, Command, Element, Font, Length, Settings, Theme,
+};
 
 pub struct MapWindow {
     map_content: String,
@@ -41,16 +41,12 @@ impl Application for MapWindow {
 
     fn view(&self) -> Element<Message> {
         let bas_font = Font::with_name("Segoe UI Emoji");
-        Container::new(
-            Text::new(&self.map_content)
-                .size(18)
-                .font(Font{
-                    family: bas_font.family,
-                    weight: iced::font::Weight::Bold,
-                    stretch: iced::font::Stretch::UltraCondensed,
-                    monospaced: false
-                })
-        )
+        Container::new(Text::new(&self.map_content).size(18).font(Font {
+            family: bas_font.family,
+            weight: iced::font::Weight::Bold,
+            stretch: iced::font::Stretch::UltraCondensed,
+            monospaced: false,
+        }))
         .width(Length::Fill)
         .height(Length::Fill)
         .padding(0)
@@ -59,6 +55,15 @@ impl Application for MapWindow {
 }
 
 pub fn open_window(map: Map) -> Result<(), Box<dyn std::error::Error>> {
-    MapWindow::run(Settings::with_flags(map))?;
+    let settings = Settings {
+        window: iced::window::Settings {
+            size: (map.width as u32, map.height as u32),
+            resizable: false,
+            ..Default::default()
+        },
+        ..Settings::with_flags(map)
+    };
+
+    MapWindow::run(settings)?;
     Ok(())
 }
