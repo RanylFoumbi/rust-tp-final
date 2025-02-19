@@ -1,8 +1,10 @@
 mod map;
-mod window;
+mod windows{
+    pub mod graphic_ui;
+}
 
 use map::Map;
-use window::open_window;
+use windows::graphic_ui::open_window;
 
 fn main() {
     let map = Map::new(800, 400, 5);
