@@ -6,5 +6,6 @@ use window::open_window;
 
 fn main() {
     let map = Map::new(800, 400, 5);
+
     open_window(map).unwrap();
 }
