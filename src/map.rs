@@ -49,7 +49,7 @@ impl Map {
             for x in 0..self.width {
                 let noise_value = perlin.get([x as f64 / TERRAIN_SCALE, y as f64 / TERRAIN_SCALE]);
                 if noise_value > THRESHOLD {
-                    self.set(x, y, '🪨');
+                    self.set(x, y, '⛰');
                 }
             }
         }

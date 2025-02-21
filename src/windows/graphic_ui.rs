@@ -92,9 +92,18 @@ pub fn create_button(label: &str, message: Message) -> Button<Message> {
 }
 
 pub fn open_window(map: Map) -> Result<(), Box<dyn std::error::Error>> {
+    let tile_size = 18;
+    let control_width = 200;
+    let padding = 20;
+
+    let window_width = (map.width as u32 * tile_size) + control_width + padding;
+    let window_height = (map.height as u32 * tile_size) + padding;
+
+    println!("Fenêtre ajustée : {}x{}", window_width, window_height);
+
     let settings = Settings {
         window: iced::window::Settings {
-            size: (800, 600),
+            size: (window_width, window_height),
             resizable: false,
             ..Default::default()
         },

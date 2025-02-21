@@ -7,12 +7,9 @@ use map::Map;
 use windows::graphic_ui::open_window;
 
 fn main() {
-    let map = Map::new(100, 100, 6);
+    let map = Map::new(50, 50, 6);
 
     //TODO: Remove this line
     map.display_in_terminal();
-
     open_window(map).unwrap();
-
-
 }
