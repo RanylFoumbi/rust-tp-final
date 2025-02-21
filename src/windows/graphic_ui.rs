@@ -1,9 +1,10 @@
+use crate::map::Map;
+
 use iced::{
     executor,
     widget::{Button, Column, Container, Row, Text},
     Application, Command, Element, Font, Length, Settings, Theme,
 };
-use crate::map::Map;
 
 pub struct MapWindow {
     map_content: String,

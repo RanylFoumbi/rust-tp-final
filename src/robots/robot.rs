@@ -1,7 +1,4 @@
 use std::collections::HashSet;
-use rand::Rng;
-
-use crate::map::Map;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum RobotType {
@@ -13,17 +10,11 @@ pub enum RobotType {
 #[derive(Debug, Clone)]
 pub enum ResourceType {
     Energy,     
-    Mineral
+    Mineral,
 }
 
-#[derive(Debug)]
-pub struct Robot {
-    pub id: usize,
-    pub robot_type: RobotType,
-    pub x: usize,
-    pub y: usize,
-    pub icon: char,
-    pub energy: u32,
-    pub cargo: Vec<ResourceType>,
-    pub discovered_map: HashSet<(usize, usize, char)>
+pub trait Robot {
+    fn new(x: usize, y: usize) -> Self;
+    fn move_robot(&mut self, map: &crate::map::Map);
+    fn get_position(&self) -> (usize, usize);
 }
