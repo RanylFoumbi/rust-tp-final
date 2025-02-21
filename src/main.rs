@@ -1,13 +1,15 @@
 mod map;
+mod simulation;
 mod windows{
     pub mod graphic_ui;
+    pub mod utils;
 }
 
 use map::Map;
-use windows::graphic_ui::open_window;
+use windows::utils::open_window;
 
 fn main() {
-    let map = Map::new(800, 400, 5);
-
+    let map = Map::new(50, 30, 5);
+    println!("{:?}", map.grid);
     open_window(map).unwrap();
 }
