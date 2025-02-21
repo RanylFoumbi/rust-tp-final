@@ -9,7 +9,6 @@ use map::Map;
 use windows::utils::open_window;
 
 fn main() {
-    let map = Map::new(50, 30, 5);
-    println!("{:?}", map.grid);
+    let map = Map::new(50, 50, 8);
     open_window(map).unwrap();
 }
