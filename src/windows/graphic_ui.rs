@@ -94,7 +94,7 @@ pub fn create_button(label: &str, message: Message) -> Button<Message> {
 
 pub fn open_window(map: Map) -> Result<(), Box<dyn std::error::Error>> {
     let tile_size = 18;
-    let control_width = 200;
+    let control_width = 300;
     let padding = 20;
 
     let window_width = (map.width as u32 * tile_size) + control_width + padding;

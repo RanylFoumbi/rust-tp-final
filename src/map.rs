@@ -105,6 +105,38 @@ impl Map {
         })
     }
 
+    pub fn place_robot_near_base(&self) -> Option<(usize, usize)> {
+        let mut base_pos = None;
+        for y in 0..self.height {
+            for x in 0..self.width {
+                if self.get(x, y) == '🏠' {
+                    base_pos = Some((x, y));
+                    break;
+                }
+            }
+        }
+
+        let (bx, by) = base_pos?;
+        
+        let directions = [
+            (bx.wrapping_sub(1), by), (bx + 1, by), 
+            (bx, by.wrapping_sub(1)), (bx, by + 1),
+        ];
+
+        for &(x, y) in &directions {
+            if x < self.width && y < self.height && self.get(x, y) == ' ' {
+                return Some((x, y));
+            }
+        }
+        None
+    }
+
+    pub fn place_robot(&mut self, x: usize, y: usize, icon: char) {
+        if x < self.width && y < self.height {
+            self.set(x, y, icon);
+        }
+    }
+
     //for debugging purposes
     pub fn display_in_terminal(&self) {
         for y in 0..self.height {
