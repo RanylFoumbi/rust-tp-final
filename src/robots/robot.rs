@@ -6,8 +6,7 @@ use crate::map::Map;
 #[derive(Debug, Clone, PartialEq)]
 pub enum RobotType {
     Explorer,    
-    Harvester, 
-    Scientist,
+    Harvester,
 }
 
 #[derive(Debug, Clone)]
@@ -16,14 +15,23 @@ pub enum ResourceType {
     Mineral
 }
 
-#[derive(Debug)]
-pub struct Robot {
-    pub id: usize,
-    pub robot_type: RobotType,
-    pub x: usize,
-    pub y: usize,
-    pub icon: char,
-    pub energy: u32,
-    pub cargo: Vec<ResourceType>,
-    pub discovered_map: HashSet<(usize, usize, char)>
+pub trait Robot {
+    fn new() -> Self where Self: Sized;
+    
+    fn get_position(&self) -> (usize, usize);
+    fn get_energy(&self) -> u32;
+    fn get_cargo(&self) -> &Vec<ResourceType>;
+    fn move_to(&mut self, x: usize, y: usize, map: &Map) -> bool {
+        if map.is_valid(x, y) {
+            self.set_position(x, y);
+            self.decrease_energy(1);
+            true
+        } else {
+            false
+        }
+    }
+    
+    
+    fn set_position(&mut self, x: usize, y: usize);
+    fn decrease_energy(&mut self, amount: u32);
 }
