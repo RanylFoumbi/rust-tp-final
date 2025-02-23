@@ -9,6 +9,6 @@ use map::Map;
 use windows::utils::open_window;
 
 fn main() {
-    let map = Map::new(50, 50, 8);
+    let map = Map::new(50, 50, 5);
     open_window(map).unwrap();
 }

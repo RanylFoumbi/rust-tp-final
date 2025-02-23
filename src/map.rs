@@ -1,8 +1,8 @@
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
 
-pub const TERRAIN_SCALE: f64 = 8.0;
-pub const RESOURCE_SCALE: f64 = 4.0;
+pub const TERRAIN_SCALE: f64 = 6.0;
+pub const RESOURCE_SCALE: f64 = 2.0;
 const RESOURCE_PROBABILITY: f64 = 0.1;
 const THRESHOLD: f64 = 0.3;
 
@@ -45,8 +45,8 @@ impl Map {
     fn generate_terrain(&mut self) {
         let perlin: Perlin = Perlin::new(self.seed);
 
-        for y in 0..self.height {
-            for x in 0..self.width {
+        for y in 1..self.height-1 {
+            for x in 1..self.width-1 {
                 let noise_value = perlin.get([x as f64 / TERRAIN_SCALE, y as f64 / TERRAIN_SCALE]);
                 if noise_value > THRESHOLD {
                     self.set(x, y, '⛰');
@@ -80,8 +80,8 @@ impl Map {
         let mut rng = rand::rng();
     
         loop {
-            let x = rng.random_range(1..self.width - 1); 
-            let y = rng.random_range(1..self.height - 1);
+            let x = rng.random_range(1..self.width-1); 
+            let y = rng.random_range(1..self.height-1);
     
             if self.get(x, y) == ' ' && self.is_surrounded_by_clear_area(x, y) {
                 self.set(x, y, '🏠');
