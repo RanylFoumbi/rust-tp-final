@@ -5,16 +5,16 @@ use crate::map::Map;
 use crate::robots::{Robot, Explorer, Harvester, Scientist};
 
 pub struct Simulation {
-    map: Arc<Mutex<Map>>,
+    map: Arc<Mutex<Map>>, 
     barrier: Arc<Barrier>, 
 }
 
 impl Simulation {
     pub fn new(map: Map) -> Self {
-        let num_threads = 3; // One for each type of robot
+        let num_threads = 3; // TODO : To replace with the number of robots
         Simulation {
             map: Arc::new(Mutex::new(map)),
-            barrier: Arc::new(Barrier::new(num_threads + 1)), // +1 for the main thread
+            barrier: Arc::new(Barrier::new(num_threads + 1)), // +1 because the main thread is also waiting
         }
     }
 
@@ -37,7 +37,7 @@ impl Simulation {
                         explorer.move_robot(&mut map);
                     }
 
-                    barrier_clone.wait(); // Wait for other threads to finish
+                    barrier_clone.wait(); // waiting to synchronize all threads
                 }
             }
         });
@@ -84,7 +84,7 @@ impl Simulation {
 
         loop {
             thread::sleep(Duration::from_millis(500));
-            barrier_clone.wait(); 
+            barrier_clone.wait(); // main thread waiting for all threads to finish
         }
 
         explorer_thread.join().unwrap();
