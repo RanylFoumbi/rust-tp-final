@@ -1,12 +1,15 @@
+use iced::widget::{Column, Container, Row, Space, Text};
 use iced::{
-    executor,
-    widget::{Button, Column, Container, Row, Text},
-    Application, Command, Element, Font, Length, Settings, Theme,
+    executor, Application, Command, Element, Font, Length, Theme
 };
 use crate::map::Map;
+use crate::simulation::{Simulation, SimulationState};
+
+use super::utils::create_button;
 
 pub struct MapWindow {
     map_content: String,
+    simulation: Simulation
 }
 
 #[derive(Debug, Clone)]
@@ -14,6 +17,8 @@ pub enum Message {
     CreateExplorer,
     CreateHarvester,
     CreateScientist,
+    Pause,
+    Play
 }
 
 impl Application for MapWindow {
@@ -24,6 +29,8 @@ impl Application for MapWindow {
 
     fn new(map: Map) -> (Self, Command<Message>) {
         let mut map_content = String::new();
+        let mut simulation = Simulation::new(&map);
+        
         for y in 0..map.height {
             for x in 0..map.width {
                 let c = map.get(x, y);
@@ -32,7 +39,7 @@ impl Application for MapWindow {
             map_content.push('\n');
         }
 
-        (MapWindow { map_content }, Command::none())
+        (MapWindow { map_content, simulation }, Command::none())
     }
 
     fn title(&self) -> String {
@@ -50,28 +57,56 @@ impl Application for MapWindow {
             Message::CreateScientist => {
                 // Create a scientist robot
             }
+            Message::Pause => self.simulation.state = SimulationState::Pause,
+            Message::Play => self.simulation.state = SimulationState::Play
         }
         Command::none()
     }
 
     fn view(&self) -> Element<Message> {
         let bas_font = Font::with_name("Segoe UI Emoji");
+        
+        let simulation_status  = format!(
+            "Simulation status\nEnergy: {}\nResources: {}\nScientist Areas: {}",
+            self.simulation.energy_count,
+            self.simulation.resource_count,
+            self.simulation.scientist_area_count
+        );
+
+        let toggle_simulation_state = || -> Message {
+            match self.simulation.state {
+                SimulationState::Pause => Message::Play,
+                SimulationState::Play => Message::Pause,
+            }
+        };
 
         let controls = Column::new()
             .spacing(10)
             .padding(10)
             .width(Length::FillPortion(2))
+            .push(Text::new(simulation_status))
+            .push(Space::with_height(20))
             .push(create_button("Create Explorer", Message::CreateExplorer))
             .push(create_button("Create Harvester", Message::CreateHarvester))
-            .push(create_button("Create Scientist", Message::CreateScientist));
+            .push(create_button("Create Scientist", Message::CreateScientist))
+            .push(Space::with_height(20))
+            .push(create_button("Play/Pause", toggle_simulation_state()));
 
-        let map = Container::new(Text::new(&self.map_content).size(18).font(Font {
-            family: bas_font.family,
-            weight: iced::font::Weight::Bold,
-            stretch: iced::font::Stretch::UltraCondensed,
-            monospaced: false,
-        }))
-        .width(Length::FillPortion(8));
+        let map = Container::new(
+            Text::new(&self.map_content)
+                .size(16)
+                .font(Font {
+                    family: bas_font.family,
+                    weight: iced::font::Weight::Bold,
+                    stretch: iced::font::Stretch::UltraCondensed,
+                    monospaced: false,
+                })
+                .horizontal_alignment(iced::alignment::Horizontal::Center)
+                .vertical_alignment(iced::alignment::Vertical::Center)
+        )
+        .width(Length::FillPortion(8))
+        .center_x()
+        .center_y();
 
         Container::new(Row::new().push(map).push(controls).spacing(10))
             .width(Length::Fill)
@@ -79,37 +114,4 @@ impl Application for MapWindow {
             .padding(0)
             .into()
     }
-}
-
-pub fn create_button(label: &str, message: Message) -> Button<Message> {
-    Button::new(
-        Text::new(label)
-            .horizontal_alignment(iced::alignment::Horizontal::Center)
-            .vertical_alignment(iced::alignment::Vertical::Center),
-    )
-    .width(Length::Fill)
-    .on_press(message)
-}
-
-pub fn open_window(map: Map) -> Result<(), Box<dyn std::error::Error>> {
-    let tile_size = 18;
-    let control_width = 200;
-    let padding = 20;
-
-    let window_width = (map.width as u32 * tile_size) + control_width + padding;
-    let window_height = (map.height as u32 * tile_size) + padding;
-
-    println!("Fenêtre ajustée : {}x{}", window_width, window_height);
-
-    let settings = Settings {
-        window: iced::window::Settings {
-            size: (window_width, window_height),
-            resizable: false,
-            ..Default::default()
-        },
-        ..Settings::with_flags(map)
-    };
-
-    MapWindow::run(settings)?;
-    Ok(())
 }

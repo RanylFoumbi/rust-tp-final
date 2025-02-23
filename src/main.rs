@@ -1,15 +1,14 @@
 mod map;
+mod simulation;
 mod windows{
     pub mod graphic_ui;
+    pub mod utils;
 }
 
 use map::Map;
-use windows::graphic_ui::open_window;
+use windows::utils::open_window;
 
 fn main() {
-    let map = Map::new(50, 50, 6);
-
-    //TODO: Remove this line
-    map.display_in_terminal();
+    let map = Map::new(50, 50, 8);
     open_window(map).unwrap();
 }

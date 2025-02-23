@@ -77,11 +77,11 @@ impl Map {
     }
 
     fn place_science_base(&mut self) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
     
         loop {
-            let x = rng.gen_range(1..self.width - 1); 
-            let y = rng.gen_range(1..self.height - 1);
+            let x = rng.random_range(1..self.width - 1); 
+            let y = rng.random_range(1..self.height - 1);
     
             if self.get(x, y) == ' ' && self.is_surrounded_by_clear_area(x, y) {
                 self.set(x, y, '🏠');
