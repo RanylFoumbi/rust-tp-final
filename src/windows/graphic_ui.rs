@@ -2,7 +2,7 @@ use iced::widget::{Column, Container, Row, Space, Text};
 use iced::{
     executor, Application, Command, Element, Font, Length, Theme
 };
-use crate::map::Map;
+use crate::environment::map::Map;
 use crate::simulation::{Simulation, SimulationState};
 
 use super::utils::create_button;
@@ -33,8 +33,8 @@ impl Application for MapWindow {
         
         for y in 0..map.height {
             for x in 0..map.width {
-                let c = map.get(x, y);
-                map_content.push(c);
+                let tile = map.get(x, y);
+                map_content.push(tile.char);
             }
             map_content.push('\n');
         }
@@ -88,7 +88,6 @@ impl Application for MapWindow {
             .push(Space::with_height(20))
             .push(create_button("Create Explorer", Message::CreateExplorer))
             .push(create_button("Create Harvester", Message::CreateHarvester))
-            .push(create_button("Create Scientist", Message::CreateScientist))
             .push(Space::with_height(20))
             .push(create_button("Play/Pause", toggle_simulation_state()));
 
