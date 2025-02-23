@@ -1,6 +1,6 @@
 use iced::{widget::{Button, Text}, Application, Length, Settings};
 
-use crate::map::Map;
+use crate::environment::map::Map;
 
 use super::graphic_ui::{MapWindow, Message};
 

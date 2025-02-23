@@ -1,4 +1,6 @@
-use crate::map::Map;
+use crate::environment::map::Map;
+
+
 
 pub enum SimulationState {
     Play,
