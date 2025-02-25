@@ -37,7 +37,7 @@ impl Map {
         self.grid[self.get_index(x, y)]
     }
 
-    fn set(&mut self, x: usize, y: usize, value: char) {
+    pub fn set(&mut self, x: usize, y: usize, value: char) {
         let idx = self.get_index(x, y);
         self.grid[idx] = value;
     }
@@ -113,5 +113,9 @@ impl Map {
             }
             println!();
         }
+    }
+
+    pub fn is_valid(&self, x: usize, y: usize) -> bool {
+        x < self.width && y < self.height
     }
 }
