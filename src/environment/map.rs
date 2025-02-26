@@ -8,12 +8,13 @@ pub const RESOURCE_SCALE: f64 = 2.0;
 const RESOURCE_PROBABILITY: f64 = 0.1;
 const THRESHOLD: f64 = 0.3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Map {
     pub width: usize,
     pub height: usize,
     pub grid: Vec<MapTile>,
     pub seed: u32,
+    pub base_position: (usize, usize),
 }
 
 impl Map {
@@ -23,6 +24,7 @@ impl Map {
             height,
             grid: vec![MapTile::new(0, 0, ' ', TileType::Default); width * height],
             seed,
+            base_position: (0, 0),
         };
 
         map.generate_terrain();
@@ -39,7 +41,7 @@ impl Map {
         self.grid[self.get_index(x, y)]
     }
 
-    fn set(&mut self, tile: MapTile) {
+    pub fn set(&mut self, tile: MapTile) {
         let idx = self.get_index(tile.x, tile.y);
         self.grid[idx] = tile;
     }
@@ -85,26 +87,12 @@ impl Map {
             let x = rng.random_range(1..self.width-1); 
             let y = rng.random_range(1..self.height-1);
     
-            if self.get(x, y).char == ' ' && self.is_surrounded_by_clear_area(x, y) {
+            if self.get(x, y).char == '⚡' || self.get(x, y).char == '💎' {
                 self.set(MapTile::new(x, y, '🏠', TileType::Base));
+                self.base_position = (x, y);
                 break;
             }
         }
-    }
-    
-    // ensure that the base is surrounded by clear area
-    fn is_surrounded_by_clear_area(&self, x: usize, y: usize) -> bool {
-        let directions = [
-            (-1, -1), (0, -1), (1, -1),  
-            (-1,  0),          (1,  0),
-            (-1,  1), (0,  1), (1,  1),
-        ];
-    
-        directions.iter().all(|(dx, dy)| {
-            let nx = (x as isize + dx) as usize;
-            let ny = (y as isize + dy) as usize;
-            self.get(nx, ny).char == ' '
-        })
     }
 
     //for debugging purposes
@@ -115,5 +103,9 @@ impl Map {
             }
             println!();
         }
+    }
+
+    pub fn is_valid(&self, x: usize, y: usize) -> bool {
+        x < self.width && y < self.height
     }
 }

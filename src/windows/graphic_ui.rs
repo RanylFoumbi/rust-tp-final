@@ -3,9 +3,10 @@ use iced::{
     executor, Application, Command, Element, Font, Length, Theme
 };
 use crate::environment::map::Map;
-use crate::simulation::{Simulation, SimulationState};
+use crate::simulation::simulation::{Simulation, SimulationState};
 
 use super::utils::create_button;
+use std::sync::{Arc, Mutex};
 
 pub struct MapWindow {
     map_content: String,
@@ -25,15 +26,16 @@ impl Application for MapWindow {
     type Message = Message;
     type Theme = Theme;
     type Executor = executor::Default;
-    type Flags = Map;
+    type Flags = Arc<Mutex<Map>>;
 
-    fn new(map: Map) -> (Self, Command<Message>) {
+    fn new(map: Arc<Mutex<Map>>) -> (Self, Command<Message>) {
+        let simulation = Simulation::new(Arc::clone(&map));
+        let map_guard = map.lock().unwrap();
         let mut map_content = String::new();
-        let mut simulation = Simulation::new(&map);
         
-        for y in 0..map.height {
-            for x in 0..map.width {
-                let tile = map.get(x, y);
+        for y in 0..map_guard.height {
+            for x in 0..map_guard.width {
+                let tile = map_guard.get(x, y);
                 map_content.push(tile.char);
             }
             map_content.push('\n');
