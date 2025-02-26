@@ -7,4 +7,4 @@ edition = "2021"
 winit = "0.30.9"
 noise = "0.9.0"
 rand = "0.9.0"
-iced = { version = "0.10", features = ["default"] }
+iced = { version = "0.10", features = ["default", "canvas", "tokio", "debug"] }

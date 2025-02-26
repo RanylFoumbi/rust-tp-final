@@ -3,20 +3,16 @@ use std::thread;
 use std::time::Duration;
 use crate::environment::map::Map;
 use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
+use std::sync::atomic::{AtomicBool, Ordering};
 
-
-pub enum SimulationState {
-    Play,
-    Pause
-}
 
 pub struct Simulation {
-    map: Arc<Mutex<Map>>, 
+    pub map: Arc<Mutex<Map>>, 
     pub barrier: Arc<Barrier>, 
     pub energy_count: u32,
     pub resource_count: u32,
     pub scientist_area_count: u32,
-    pub state: SimulationState
+    pub running: Arc<AtomicBool>
 }
 
 impl Simulation {
@@ -28,8 +24,16 @@ impl Simulation {
             energy_count: 0,
             resource_count: 0,
             scientist_area_count: 0,
-            state: SimulationState::Play
+            running: Arc::new(AtomicBool::new(false))
         }
+    }
+
+    pub fn play(&self) {
+        self.running.store(true, Ordering::SeqCst);
+    }
+
+    pub fn pause(&self) {
+        self.running.store(false, Ordering::SeqCst);
     }
 
     pub fn run(&self) {

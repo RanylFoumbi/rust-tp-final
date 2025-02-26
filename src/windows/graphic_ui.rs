@@ -1,23 +1,23 @@
 use iced::widget::{Column, Container, Row, Space, Text};
 use iced::{
-    executor, Application, Command, Element, Font, Length, Theme
+    executor, Application, Command, Element, Font, Length, Subscription, Theme, time
 };
 use crate::environment::map::Map;
-use crate::simulation::simulation::{Simulation, SimulationState};
+use crate::simulation::simulation::Simulation;
 
 use super::utils::create_button;
 use std::sync::{Arc, Mutex};
 
 pub struct MapWindow {
-    map_content: String,
-    simulation: Simulation
+    simulation: Simulation,
+    map_content: String
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Tick,
     CreateExplorer,
     CreateHarvester,
-    CreateScientist,
     Pause,
     Play
 }
@@ -29,16 +29,17 @@ impl Application for MapWindow {
     type Flags = Arc<Mutex<Map>>;
 
     fn new(map: Arc<Mutex<Map>>) -> (Self, Command<Message>) {
-        let simulation = Simulation::new(Arc::clone(&map));
-        let map_guard = map.lock().unwrap();
+        let simulation = Simulation::new(map);
         let mut map_content = String::new();
         
-        for y in 0..map_guard.height {
-            for x in 0..map_guard.width {
-                let tile = map_guard.get(x, y);
-                map_content.push(tile.char);
+        if let Ok(map_guard) = simulation.map.lock() {
+            for y in 0..map_guard.height {
+                for x in 0..map_guard.width {
+                    let tile = map_guard.get(x, y);
+                    map_content.push(tile.char);
+                }
+                map_content.push('\n');
             }
-            map_content.push('\n');
         }
 
         (MapWindow { map_content, simulation }, Command::none())
@@ -50,19 +51,33 @@ impl Application for MapWindow {
 
     fn update(&mut self, _message: Message) -> Command<Message> {
         match _message {
+            Message::Tick => {
+                if let Ok(map_guard) = self.simulation.map.try_lock() {
+                    let mut map_content = String::new();
+                    for y in 0..map_guard.height {
+                        for x in 0..map_guard.width {
+                            let tile = map_guard.get(x, y);
+                            map_content.push(tile.char);
+                        }
+                        map_content.push('\n');
+                    }
+                    self.map_content = map_content;
+                }
+            }
             Message::CreateExplorer => {
                 // Create an explorer robot
             }
             Message::CreateHarvester => {
                 // Create a harvester robot
             }
-            Message::CreateScientist => {
-                // Create a scientist robot
-            }
-            Message::Pause => self.simulation.state = SimulationState::Pause,
-            Message::Play => self.simulation.state = SimulationState::Play
+            Message::Pause => self.simulation.pause(),
+            Message::Play => self.simulation.play(),
         }
         Command::none()
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        time::every(std::time::Duration::from_millis(33)).map(|_| Message::Tick)
     }
 
     fn view(&self) -> Element<Message> {
@@ -76,9 +91,9 @@ impl Application for MapWindow {
         );
 
         let toggle_simulation_state = || -> Message {
-            match self.simulation.state {
-                SimulationState::Pause => Message::Play,
-                SimulationState::Play => Message::Pause,
+            match self.simulation.running.load(std::sync::atomic::Ordering::SeqCst) {
+                false => Message::Play,
+                true => Message::Pause,
             }
         };
 

@@ -21,10 +21,13 @@ pub fn open_window(map: Arc<Mutex<Map>>) -> Result<(), Box<dyn std::error::Error
     let control_width = 200;
     let padding = 20;
 
-    let map_guard = map.lock().unwrap();
-    let window_width = (map_guard.width as u32 * tile_size) + control_width + padding;
-    let window_height = (map_guard.height as u32 * tile_size) + padding;
-    drop(map_guard);
+    let (window_width, window_height) = {
+        let map_guard = map.lock().unwrap();
+        let width = (map_guard.width as u32 * tile_size) + control_width + padding;
+        let height = (map_guard.height as u32 * tile_size) + padding;
+        (width, height)
+    };
+    
     println!("Fenêtre ajustée : {}x{}", window_width, window_height);
 
     let settings = Settings {
@@ -33,6 +36,8 @@ pub fn open_window(map: Arc<Mutex<Map>>) -> Result<(), Box<dyn std::error::Error
             resizable: false,
             ..Default::default()
         },
+        antialiasing: true,
+        exit_on_close_request: true,
         ..Settings::with_flags(map)
     };
 
