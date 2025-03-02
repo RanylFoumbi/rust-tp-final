@@ -1,18 +1,17 @@
-use super::robot::{Robot, RobotState};
+use super::robot::{Robot, RobotState, RobotType, CHAR_HEIGHT, CHAR_WIDTH};
+use crate::environment::{
+    map::Map,
+    tile::{MapTile, Resource, ResourceType, TileType},
+};
 use rand::Rng;
-use crate::environment::{map::Map, tile::ResourceType};
-use std::collections::HashSet;
+use std::{collections::HashSet, thread, time::Duration};
 
 pub struct Explorer {
     pub x: usize,
     pub y: usize,
-    pub energy: u32,
-    pub cargo: Vec<ResourceType>,
-    pub discovered_map: HashSet<(usize, usize, char)>,
-    pub icon: char,
+    pub cargo: Vec<MapTile>,
+    pub cargo_capacity: u32,
     pub state: RobotState,
-    pub base_position: (usize, usize),
-    pub target_resource: Option<(usize, usize, ResourceType)>,
 }
 
 impl Robot for Explorer {
@@ -20,30 +19,22 @@ impl Robot for Explorer {
         Explorer {
             x: x,
             y: y,
-            energy: 150,
             cargo: Vec::new(),
-            discovered_map: HashSet::new(),
-            icon: '🤖',
+            cargo_capacity: 5,
             state: RobotState::Exploring,
-            base_position: (0, 0),
-            target_resource: None,
         }
+    }
+
+    fn get_type(&self) -> RobotType {
+        RobotType::Explorer
     }
 
     fn get_position(&self) -> (usize, usize) {
         (self.x, self.y)
     }
 
-    fn get_energy(&self) -> u32 {
-        self.energy
-    }
-
-    fn get_cargo(&self) -> &Vec<ResourceType> {
-        &self.cargo
-    }
-
-    fn get_state(&self) -> &RobotState { 
-        &self.state 
+    fn get_state(&self) -> &RobotState {
+        &self.state
     }
 
     fn set_state(&mut self, state: RobotState) {
@@ -54,84 +45,51 @@ impl Robot for Explorer {
         self.x = x;
         self.y = y;
     }
-
-    fn decrease_energy(&mut self, amount: u32) {
-        self.energy = self.energy.saturating_sub(amount);
-    }
 }
 
 impl Explorer {
-    
-    pub fn explore(&mut self, map: &Map) {
+    pub fn explore(&mut self, map: &mut Map) {
         let mut rng = rand::rng();
-        let (dx, dy) = (
-            rng.random_range(-1..=1),
-            rng.random_range(-1..=1)
-        );
         
-        let new_x = self.x as i32 + dx;
-        let new_y = self.y as i32 + dy;
+        // Choose random direction (up, down, left, right)
+        let move_horizontal = rng.random_bool(0.5);
         
-        if new_x >= 0 && new_y >= 0 {
-            let new_x = new_x as usize;
-            let new_y = new_y as usize;
-            
-            if self.move_to(new_x, new_y, map) {
-                self.discovered_map.insert((
-                    new_x,
-                    new_y,
-                    map.get(new_x, new_y).char
-                ));
+        let (direction_x, direction_y) = if move_horizontal {
+            (if rng.random_bool(0.5) { 1 } else { -1 }, 0)
+        } else {
+            (0, if rng.random_bool(0.5) { 1 } else { -1 })
+        };
+        
+        // Calculate new position (one step at a time)
+        let new_x = (self.x as i32 + direction_x).clamp(0, (map.width - 1) as i32) as usize;
+        let new_y = (self.y as i32 + direction_y).clamp(0, (map.height - 1) as i32) as usize;
+        
+        if self.move_to(new_x, new_y, map) {
+            let tile = map.get(self.x, self.y).tile;
+            match tile {
+                TileType::Resource(_) => {
+                    if self.cargo.len() < self.cargo_capacity as usize {
+                        self.cargo.push(MapTile::new(self.x, self.y, tile));
+                    } else {
+                        self.state = RobotState::ReturningToBase;
+                    }
+                }
+                _ => {}
             }
         }
+    
+        thread::sleep(Duration::from_millis(100));
     }
+    
 
-    pub fn get_discovered_map(&self) -> &HashSet<(usize, usize, char)> {
-        &self.discovered_map
-    }
-
-    pub fn find_nearest_resource(&self) -> Option<(usize, usize, ResourceType)> {
-        self.discovered_map
-            .iter()
-            .filter(|(_, _, tile)| *tile == '💎' || *tile == '⚡')
-            .map(|(x, y, tile)| (*x, *y, 
-                if *tile == '💎' { ResourceType::Mineral } 
-                else { ResourceType::Energy }
-            ))
-            .min_by_key(|(x, y, _)| {
-                let dx = *x as i32 - self.x as i32;
-                let dy = *y as i32 - self.y as i32;
-                (dx * dx + dy * dy) as usize  
-            })
-    }
-
-    pub fn update(&mut self, map: &Map) {
+    pub fn update(&mut self, map: &mut Map) {
         match self.state {
             RobotState::Exploring => {
                 self.explore(map);
-                if let Some(resource) = self.find_nearest_resource() {
-                    self.target_resource = Some(resource);
-                    self.state = RobotState::MovingToResource;
-                }
-            },
-            RobotState::MovingToResource => {
-                if let Some((target_x, target_y, _)) = self.target_resource {
-                    if self.move_towards(target_x, target_y, map) {
-                        if self.x == target_x && self.y == target_y {
-                            self.state = RobotState::Exploring;
-                        }
-                    }
-                }
-            },
+            }
             RobotState::ReturningToBase => {
-                let (base_x, base_y) = self.base_position;
-                if self.move_towards(base_x, base_y, map) {
-                    if self.x == base_x && self.y == base_y {
-                        self.cargo.clear();
-                        self.state = RobotState::Exploring;
-                    }
-                }
-            },
+                self.return_to_base(map);
+            }
             _ => {}
         }
     }

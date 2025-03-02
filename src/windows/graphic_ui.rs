@@ -2,11 +2,12 @@ use iced::widget::{Column, Container, Row, Space, Text};
 use iced::{
     executor, Application, Command, Element, Font, Length, Subscription, Theme, time
 };
-use crate::environment::map::Map;
+
+use crate::robots::robot::RobotType;
 use crate::simulation::simulation::Simulation;
 
+
 use super::utils::create_button;
-use std::sync::{Arc, Mutex};
 
 pub struct MapWindow {
     simulation: Simulation,
@@ -26,17 +27,16 @@ impl Application for MapWindow {
     type Message = Message;
     type Theme = Theme;
     type Executor = executor::Default;
-    type Flags = Arc<Mutex<Map>>;
+    type Flags = Simulation;
 
-    fn new(map: Arc<Mutex<Map>>) -> (Self, Command<Message>) {
-        let simulation = Simulation::new(map);
+    fn new(simulation: Simulation) -> (Self, Command<Message>) {
         let mut map_content = String::new();
         
         if let Ok(map_guard) = simulation.map.lock() {
             for y in 0..map_guard.height {
                 for x in 0..map_guard.width {
-                    let tile = map_guard.get(x, y);
-                    map_content.push(tile.char);
+                    let tile = map_guard.get(x, y).tile;
+                    map_content.push(tile.char());
                 }
                 map_content.push('\n');
             }
@@ -49,15 +49,15 @@ impl Application for MapWindow {
         String::from("Map Window")
     }
 
-    fn update(&mut self, _message: Message) -> Command<Message> {
-        match _message {
+    fn update(&mut self, message: Message) -> Command<Message> {
+        match message {
             Message::Tick => {
                 if let Ok(map_guard) = self.simulation.map.try_lock() {
                     let mut map_content = String::new();
                     for y in 0..map_guard.height {
                         for x in 0..map_guard.width {
-                            let tile = map_guard.get(x, y);
-                            map_content.push(tile.char);
+                            let tile = map_guard.get(x, y).tile;
+                            map_content.push(tile.char());
                         }
                         map_content.push('\n');
                     }
@@ -65,11 +65,11 @@ impl Application for MapWindow {
                 }
             }
             Message::CreateExplorer => {
-                // Create an explorer robot
-            }
+                self.simulation.create_robot(RobotType::Explorer);
+            },
             Message::CreateHarvester => {
-                // Create a harvester robot
-            }
+                self.simulation.create_robot(RobotType::Harvester);
+            },
             Message::Pause => self.simulation.pause(),
             Message::Play => self.simulation.play(),
         }
@@ -83,11 +83,10 @@ impl Application for MapWindow {
     fn view(&self) -> Element<Message> {
         let bas_font = Font::with_name("Segoe UI Emoji");
         
-        let simulation_status  = format!(
-            "Simulation status\nEnergy: {}\nResources: {}\nScientist Areas: {}",
+        let simulation_status =  format!(
+            "Simulation status\nEnergy: {}\nResources: {}",
             self.simulation.energy_count,
             self.simulation.resource_count,
-            self.simulation.scientist_area_count
         );
 
         let toggle_simulation_state = || -> Message {
@@ -110,7 +109,7 @@ impl Application for MapWindow {
 
         let map = Container::new(
             Text::new(&self.map_content)
-                .size(16)
+                .size(20)
                 .font(Font {
                     family: bas_font.family,
                     weight: iced::font::Weight::Bold,
@@ -130,4 +129,5 @@ impl Application for MapWindow {
             .padding(0)
             .into()
     }
+
 }

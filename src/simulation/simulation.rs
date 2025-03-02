@@ -1,30 +1,37 @@
-use std::sync::{Arc, Mutex, Barrier};
+use crate::environment::map::Map;
+use crate::environment::tile::{MapTile, Resource, TileType};
+use crate::robots::robot::RobotType;
+use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
+use crate::windows::utils::open_window;
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use crate::environment::map::Map;
-use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
-use std::sync::atomic::{AtomicBool, Ordering};
 
-
+#[derive(Clone)]
 pub struct Simulation {
-    pub map: Arc<Mutex<Map>>, 
-    pub barrier: Arc<Barrier>, 
+    pub map: Arc<Mutex<Map>>,
     pub energy_count: u32,
     pub resource_count: u32,
-    pub scientist_area_count: u32,
-    pub running: Arc<AtomicBool>
+    pub running: Arc<AtomicBool>,
+    explorer_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
+    harvester_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
+    located_resources: Arc<Mutex<VecDeque<Vec<(usize, usize, Resource)>>>>,
 }
 
 impl Simulation {
-    pub fn new(map: Arc<Mutex<Map>>) -> Self {
-        let num_threads = 3; // TODO : To replace with the number of robots
+    pub fn new() -> Self {
+        let map = Arc::new(Mutex::new(Map::new(50, 50, 8)));
+
         Simulation {
-            map: map,
-            barrier: Arc::new(Barrier::new(num_threads + 1)), // +1 because the main thread is also waiting
+            map,
             energy_count: 0,
             resource_count: 0,
-            scientist_area_count: 0,
-            running: Arc::new(AtomicBool::new(false))
+            running: Arc::new(AtomicBool::new(false)),
+            explorer_threads: Arc::new(Mutex::new(VecDeque::new())),
+            harvester_threads: Arc::new(Mutex::new(VecDeque::new())),
+            located_resources: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
@@ -36,56 +43,11 @@ impl Simulation {
         self.running.store(false, Ordering::SeqCst);
     }
 
-    pub fn run(&self) {
-        let map_clone = Arc::clone(&self.map);
-        let barrier_clone = Arc::clone(&self.barrier);
-        let (x, y) = self.map.lock().unwrap().base_position;
+    pub fn run(&mut self) {
+        let _ = open_window(self);
+    }
 
-        let explorer_thread = thread::spawn({
-            let map_clone = Arc::clone(&map_clone);
-            let barrier_clone = Arc::clone(&barrier_clone);
-            move || {
-                let mut explorer = Explorer::new(x, y);
-                
-                loop {
-                    thread::sleep(Duration::from_millis(500));
-
-                    {
-                        let mut map = map_clone.lock().unwrap();
-                        explorer.update(&mut map);
-                    }
-
-                    barrier_clone.wait(); // waiting to synchronize all threads
-                }
-            }
-        });
-
-        let harvester_thread = thread::spawn({
-            let map_clone = Arc::clone(&map_clone);
-            let barrier_clone = Arc::clone(&barrier_clone);
-            move || {
-                 
-                let mut harvester = Harvester::new(x, y);
-                
-                loop {
-                    thread::sleep(Duration::from_millis(500));
-
-                    {
-                        let mut map = map_clone.lock().unwrap();
-                        harvester.update(&mut map);
-                    }
-
-                    barrier_clone.wait();
-                }
-            }
-        });
-
-        loop {
-            thread::sleep(Duration::from_millis(500));
-            barrier_clone.wait(); // main thread waiting for all threads to finish
-        }
-
-        explorer_thread.join().unwrap();
-        harvester_thread.join().unwrap();
+    pub fn create_robot(&mut self, robot_type: RobotType) {
+        
     }
 }

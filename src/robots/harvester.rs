@@ -1,20 +1,13 @@
-use rand::Rng;
-
-use super::robot::{Robot, RobotState};
-use crate::environment::{map::Map, tile::{MapTile, TileType, ResourceType}};
-use std::collections::HashSet;
+use super::robot::{Robot, RobotState, RobotType};
+use crate::environment::{map::Map, tile::{MapTile, Resource, TileType}};
 
 pub struct Harvester {
     pub x: usize,
     pub y: usize,
     pub energy: u32,
-    pub cargo: Vec<ResourceType>,
-    pub discovered_map: HashSet<(usize, usize, char)>,
-    pub icon: char,
-    pub cargo_capacity: usize,
+    pub cargo_capacity: u32,
     pub state: RobotState,
-    pub base_position: (usize, usize),
-    pub target_resource: Option<(usize, usize, ResourceType)>,
+    pub target_resource: Option<(usize, usize, Resource)>,
 }
 
 impl Robot for Harvester {
@@ -23,26 +16,18 @@ impl Robot for Harvester {
             x: x,
             y: y,
             energy: 200,
-            cargo: Vec::new(),
-            discovered_map: HashSet::new(),
-            icon: '🚜',
             cargo_capacity: 5,
-            state: RobotState::Exploring,
-            base_position: (0, 0),
+            state: RobotState::MovingToResource,
             target_resource: None,
         }
     }
 
+    fn get_type(&self) -> RobotType {
+        RobotType::Harvester
+    }
+
     fn get_position(&self) -> (usize, usize) {
         (self.x, self.y)
-    }
-
-    fn get_energy(&self) -> u32 {
-        self.energy
-    }
-
-    fn get_cargo(&self) -> &Vec<ResourceType> {
-        &self.cargo
     }
 
     fn get_state(&self) -> &RobotState { 
@@ -57,111 +42,63 @@ impl Robot for Harvester {
         self.x = x;
         self.y = y;
     }
+}
+
+impl Harvester {
+
+    pub fn harvest(&mut self, map: &mut Map) -> Option<Resource> {
+        let (_, _, resource) = self.target_resource?;
+        
+        self.decrease_energy(1);
+        
+        let amount = resource.scale.min(self.cargo_capacity);
+        let remaining = resource.scale - amount;
+        
+        map.set(MapTile::new(
+            self.x,
+            self.y,
+            if remaining > 0 {
+                TileType::Resource(Resource::new(remaining, resource.resource_type))
+            } else {
+                TileType::Empty
+            }
+        ));
+
+        self.set_state(RobotState::ReturningToBase);
+
+        Some(Resource::new(amount, resource.resource_type))
+    }
 
     fn decrease_energy(&mut self, amount: u32) {
         self.energy = self.energy.saturating_sub(amount);
     }
-}
 
-impl Harvester {
-    
-    pub fn harvest(&mut self, map: &mut Map) -> Option<ResourceType> {
-        if self.cargo.len() >= self.cargo_capacity {
-            return None;
-        }
-
-        let current_tile = map.get(self.x, self.y);
-        let resource = match current_tile.char {
-            '💎' => Some(ResourceType::Mineral),
-            '⚡' => Some(ResourceType::Energy),
-            _ => None,
-        };
-
-        if let Some(resource_type) = resource {
-            self.decrease_energy(1);
-            self.cargo.push(resource_type.clone());
-            map.set(MapTile::new(self.x, self.y, ' ', TileType::Base));
-            Some(resource_type)
-        } else {
-            None
-        }
+    pub fn get_energy(&self) -> u32 {
+        self.energy
     }
 
-    pub fn get_cargo_capacity(&self) -> usize {
-        self.cargo_capacity
-    }
-
-    pub fn is_cargo_full(&self) -> bool {
-        self.cargo.len() >= self.cargo_capacity
-    }
-
-    pub fn scan_for_resources(&self, map: &Map) -> Option<(usize, usize, ResourceType)> {
-        for dx in -3..=3 {
-            for dy in -3..=3 {
-                let new_x = self.x as i32 + dx;
-                let new_y = self.y as i32 + dy;
-                
-                if new_x >= 0 && new_y >= 0 {
-                    let x = new_x as usize;
-                    let y = new_y as usize;
-                    
-                    if map.is_valid(x, y) {
-                        match map.get(x, y).char {
-                            '💎' => return Some((x, y, ResourceType::Mineral)),
-                            '⚡' => return Some((x, y, ResourceType::Energy)),
-                            _ => continue,
-                        }
-                    }
-                }
-            }
-        }
-        None
+    pub fn set_target_resource(&mut self, x: usize, y: usize, resource: Resource) {
+        self.target_resource = Some((x, y, resource));
     }
 
     pub fn update(&mut self, map: &mut Map) {
         match self.state {
-            RobotState::Exploring => {
-                if let Some(resource) = self.scan_for_resources(map) {
-                    self.target_resource = Some(resource);
-                    self.state = RobotState::MovingToResource;
-                } else {
-                    let mut rng = rand::rng();
-                    let (dx, dy) = (rng.random_range(-1..=1), rng.random_range(-1..=1));
-                    let new_x = (self.x as i32 + dx) as usize;
-                    let new_y = (self.y as i32 + dy) as usize;
-                    self.move_to(new_x, new_y, map);
-                }
-            },
-            RobotState::MovingToResource => {
-                if let Some((target_x, target_y, _)) = self.target_resource {
-                    if self.x == target_x && self.y == target_y {
-                        self.state = RobotState::Harvesting;
-                    } else {
-                        self.move_towards(target_x, target_y, map);
+            RobotState::MovingToResource  =>{
+                let (target_x, target_y, _) = self.target_resource.unwrap();
+                let path = self.calculate_path(target_x, target_y, map);
+                for (x, y) in path {
+                    if self.move_to(x, y, map) {
+                        break;
                     }
                 }
             },
             RobotState::Harvesting => {
-                if self.cargo.len() < self.cargo_capacity {
-                    if let Some(_) = self.harvest(map) {
-                    } else {
-                        self.state = RobotState::Exploring;
-                        self.target_resource = None;
-                    }
-                } else {
-                    self.state = RobotState::ReturningToBase;
-                }
+                self.harvest(map);
             },
             RobotState::ReturningToBase => {
-                let (base_x, base_y) = self.base_position;
-                if self.x == base_x && self.y == base_y {
-                    self.cargo.clear();
-                    self.state = RobotState::Exploring;
-                } else {
-                    self.move_towards(base_x, base_y, map);
-                }
+                self.return_to_base(map);
             },
-            RobotState::Idle => {}
+            _ => {}
         }
     }
 }

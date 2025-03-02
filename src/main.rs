@@ -15,11 +15,9 @@ mod windows{
     pub mod utils;
 }
 
-use environment::map::Map;
-use windows::utils::open_window;
-use std::sync::{Arc, Mutex};
+use simulation::simulation::Simulation;
 
 fn main() {
-    let map = Arc::new(Mutex::new(Map::new(50, 50, 8)));
-    let _ = open_window(map);
+    let mut simulation = Simulation::new();
+    simulation.run();
 }

@@ -22,7 +22,7 @@ impl Map {
         let mut map = Map {
             width,
             height,
-            grid: vec![MapTile::new(0, 0, ' ', TileType::Default); width * height],
+            grid: vec![MapTile::new(0, 0,  TileType::Empty); width * height],
             seed,
             base_position: (0, 0),
         };
@@ -53,7 +53,7 @@ impl Map {
             for x in 1..self.width-1 {
                 let noise_value = perlin.get([x as f64 / TERRAIN_SCALE, y as f64 / TERRAIN_SCALE]);
                 if noise_value > THRESHOLD {
-                    self.set(MapTile::new(x, y,'⛰', TileType::Default));
+                    self.set(MapTile::new(x, y,TileType::Terrain));
                 }
             }
         }
@@ -65,16 +65,16 @@ impl Map {
 
         for y in 0..self.height {
             for x in 0..self.width {
-                if self.get(x, y).char != ' ' {
+                if self.get(x, y).tile != TileType::Empty {
                     continue;
                 }
 
                 let noise_value =
                     perlin.get([x as f64 / RESOURCE_SCALE, y as f64 / RESOURCE_SCALE]);
                 if noise_value > THRESHOLD && rng.random_bool(RESOURCE_PROBABILITY) {
-                    self.set(MapTile::new(x, y, '⚡', TileType::Resource(Resource::new(10.0, ResourceType::Energy))));
+                    self.set(MapTile::new(x, y, TileType::Resource(Resource::new(10, ResourceType::Energy))));
                 } else if noise_value > THRESHOLD && rng.random_bool(RESOURCE_PROBABILITY) {
-                    self.set(MapTile::new(x, y, '💎', TileType::Resource(Resource::new(10.0, ResourceType::Mineral))));
+                    self.set(MapTile::new(x, y, TileType::Resource(Resource::new(10, ResourceType::Mineral))));
                 }
             }
         }
@@ -87,8 +87,8 @@ impl Map {
             let x = rng.random_range(1..self.width-1); 
             let y = rng.random_range(1..self.height-1);
     
-            if self.get(x, y).char == '⚡' || self.get(x, y).char == '💎' {
-                self.set(MapTile::new(x, y, '🏠', TileType::Base));
+            if self.get(x, y).tile == TileType::Empty {
+                self.set(MapTile::new(x, y,  TileType::Base));
                 self.base_position = (x, y);
                 break;
             }
@@ -99,13 +99,20 @@ impl Map {
     pub fn display_in_terminal(&self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                print!("{}", self.get(x, y).char);
+                print!("{}", self.get(x, y).tile.char());
             }
             println!();
         }
     }
 
-    pub fn is_valid(&self, x: usize, y: usize) -> bool {
-        x < self.width && y < self.height
+    pub fn is_valid(&self, x: usize, y: usize, from_x: usize, from_y: usize) -> bool {
+        if !(x < self.width && y < self.height && self.get(x, y).tile == TileType::Empty) {
+            return false;
+        }
+    
+        let x_diff = if x >= from_x { x - from_x } else { from_x - x };
+        let y_diff = if y >= from_y { y - from_y } else { from_y - y };
+        
+        (x_diff == 1 && y_diff == 0) || (x_diff == 0 && y_diff == 1)
     }
 }
