@@ -3,6 +3,7 @@ use crate::environment::{Map, MapTile, Resource, ResourceType, TileType};
 use rand::Rng;
 use std::{collections::HashSet, thread, time::Duration};
 
+
 #[derive(Debug)]
 pub struct Explorer {
     pub x: usize,
@@ -20,6 +21,18 @@ impl Robot for Explorer {
             cargo: Vec::new(),
             cargo_capacity: 5,
             state: RobotState::Exploring,
+        }
+    }
+
+    fn update(&mut self, map: &mut Map) {
+        match self.state {
+            RobotState::Exploring => {
+                self.explore(map);
+            }
+            RobotState::ReturningToBase => {
+                self.return_to_base(map);
+            }
+            _ => {}
         }
     }
 
@@ -47,18 +60,16 @@ impl Robot for Explorer {
 
 impl Explorer {
     pub fn explore(&mut self, map: &mut Map) {
-        let mut rng = rand::thread_rng(); // Correction ici
+        let mut rng = rand::thread_rng();
         
-        // Choisir une direction aléatoire (haut, bas, gauche, droite)
-        let move_horizontal = rng.gen_bool(0.5); // Correction ici
+        let move_horizontal = rng.gen_bool(0.5);
         
         let (direction_x, direction_y) = if move_horizontal {
-            (if rng.gen_bool(0.5) { 1 } else { -1 }, 0) // Correction ici
+            (if rng.gen_bool(0.5) { 1 } else { -1 }, 0)
         } else {
-            (0, if rng.gen_bool(0.5) { 1 } else { -1 }) // Correction ici
+            (0, if rng.gen_bool(0.5) { 1 } else { -1 })
         };
         
-        // Calculer la nouvelle position (1 pas à la fois)
         let new_x = (self.x as isize + direction_x).max(0).min((map.width - 1) as isize) as usize;
         let new_y = (self.y as isize + direction_y).max(0).min((map.height - 1) as isize) as usize;
         
@@ -74,20 +85,6 @@ impl Explorer {
                 }
                 _ => {}
             }
-        }
-    
-        thread::sleep(Duration::from_millis(100));
-    }
-    
-    pub fn update(&mut self, map: &mut Map) {
-        match self.state {
-            RobotState::Exploring => {
-                self.explore(map);
-            }
-            RobotState::ReturningToBase => {
-                self.return_to_base(map);
-            }
-            _ => {}
         }
     }
 }

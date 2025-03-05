@@ -6,7 +6,7 @@ pub enum TileType {
     Terrain,
     Base,
     Resource(Resource),
-    Robot(RobotType), // Utilise RobotType ici
+    Robot(RobotType),
 }
 
 impl TileType {

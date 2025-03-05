@@ -28,6 +28,8 @@ pub trait Robot {
     fn get_state(&self) -> &RobotState;
     fn set_state(&mut self, state: RobotState);
     fn get_type(&self) -> RobotType;
+    fn update(&mut self, map: &mut Map);
+
 
     fn move_to(&mut self, x: usize, y: usize, map: &mut Map) -> bool {
         let (old_x, old_y) = self.get_position();
