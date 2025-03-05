@@ -1,13 +1,10 @@
-use iced::widget::{Column, Container, Row, Space, Text};
-use iced::{
-    executor, Application, Command, Element, Font, Length, Subscription, Theme, time
-};
-
-use crate::robots::robot::RobotType;
-use crate::simulation::simulation::Simulation;
-
-
+use iced::widget::{Column, Container, Row, Text};
+use iced::{executor, Application, Command, Element, Length, Subscription, Theme, time};
+use crate::simulation::Simulation;
 use super::utils::create_button;
+use crate::robots::robot::Robot;
+use crate::robots::explorer::Explorer;
+use crate::robots::harvester::Harvester;
 
 pub struct MapWindow {
     simulation: Simulation,
@@ -31,12 +28,10 @@ impl Application for MapWindow {
 
     fn new(simulation: Simulation) -> (Self, Command<Message>) {
         let mut map_content = String::new();
-        
         if let Ok(map_guard) = simulation.map.lock() {
             for y in 0..map_guard.height {
                 for x in 0..map_guard.width {
-                    let tile = map_guard.get(x, y).tile;
-                    map_content.push(tile.char());
+                    map_content.push(map_guard.get(x, y).tile.char());
                 }
                 map_content.push('\n');
             }
@@ -52,12 +47,11 @@ impl Application for MapWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::Tick => {
-                if let Ok(map_guard) = self.simulation.map.try_lock() {
+                if let Ok(map_guard) = self.simulation.map.lock() {
                     let mut map_content = String::new();
                     for y in 0..map_guard.height {
                         for x in 0..map_guard.width {
-                            let tile = map_guard.get(x, y).tile;
-                            map_content.push(tile.char());
+                            map_content.push(map_guard.get(x, y).tile.char());
                         }
                         map_content.push('\n');
                     }
@@ -65,10 +59,10 @@ impl Application for MapWindow {
                 }
             }
             Message::CreateExplorer => {
-                self.simulation.create_robot(RobotType::Explorer);
+                self.simulation.add_robot(Box::new(Explorer::new(2, 2)));
             },
             Message::CreateHarvester => {
-                self.simulation.create_robot(RobotType::Harvester);
+                self.simulation.add_robot(Box::new(Harvester::new(3, 3)));
             },
             Message::Pause => self.simulation.pause(),
             Message::Play => self.simulation.play(),
@@ -81,47 +75,14 @@ impl Application for MapWindow {
     }
 
     fn view(&self) -> Element<Message> {
-        let bas_font = Font::with_name("Segoe UI Emoji");
-        
-        let simulation_status =  format!(
-            "Simulation status\nEnergy: {}\nResources: {}",
-            self.simulation.energy_count,
-            self.simulation.resource_count,
-        );
-
-        let toggle_simulation_state = || -> Message {
-            match self.simulation.running.load(std::sync::atomic::Ordering::SeqCst) {
-                false => Message::Play,
-                true => Message::Pause,
-            }
-        };
-
         let controls = Column::new()
             .spacing(10)
             .padding(10)
-            .width(Length::FillPortion(2))
-            .push(Text::new(simulation_status))
-            .push(Space::with_height(20))
             .push(create_button("Create Explorer", Message::CreateExplorer))
             .push(create_button("Create Harvester", Message::CreateHarvester))
-            .push(Space::with_height(20))
-            .push(create_button("Play/Pause", toggle_simulation_state()));
+            .push(create_button("Play/Pause", Message::Play));
 
-        let map = Container::new(
-            Text::new(&self.map_content)
-                .size(20)
-                .font(Font {
-                    family: bas_font.family,
-                    weight: iced::font::Weight::Bold,
-                    stretch: iced::font::Stretch::UltraCondensed,
-                    monospaced: false,
-                })
-                .horizontal_alignment(iced::alignment::Horizontal::Center)
-                .vertical_alignment(iced::alignment::Vertical::Center)
-        )
-        .width(Length::FillPortion(8))
-        .center_x()
-        .center_y();
+        let map = Container::new(Text::new(&self.map_content).size(20));
 
         Container::new(Row::new().push(map).push(controls).spacing(10))
             .width(Length::Fill)
@@ -129,5 +90,4 @@ impl Application for MapWindow {
             .padding(0)
             .into()
     }
-
 }
