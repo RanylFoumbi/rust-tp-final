@@ -1,6 +1,4 @@
-use std::char;
-
-use crate::robots::robot::RobotType;
+use crate::robots::RobotType;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TileType {
@@ -8,7 +6,7 @@ pub enum TileType {
     Terrain,
     Base,
     Resource(Resource),
-    Robot(RobotType),
+    Robot(RobotType), // Utilise RobotType ici
 }
 
 impl TileType {

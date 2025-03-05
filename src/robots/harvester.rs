@@ -1,6 +1,7 @@
-use super::robot::{Robot, RobotState, RobotType};
-use crate::environment::{map::Map, tile::{MapTile, Resource, TileType}};
+use crate::robots::{Robot, RobotState, RobotType};
+use crate::environment::{Map, MapTile, Resource, TileType};
 
+#[derive(Debug)]
 pub struct Harvester {
     pub x: usize,
     pub y: usize,
@@ -13,8 +14,8 @@ pub struct Harvester {
 impl Robot for Harvester {
     fn new(x: usize, y: usize) -> Self {
         Harvester {
-            x: x,
-            y: y,
+            x,
+            y,
             energy: 200,
             cargo_capacity: 5,
             state: RobotState::MovingToResource,
@@ -45,10 +46,8 @@ impl Robot for Harvester {
 }
 
 impl Harvester {
-
     pub fn harvest(&mut self, map: &mut Map) -> Option<Resource> {
-        let (_, _, resource) = self.target_resource?;
-        
+        let (_, _, resource) = self.target_resource?;       
         self.decrease_energy(1);
         
         let amount = resource.scale.min(self.cargo_capacity);
@@ -84,11 +83,12 @@ impl Harvester {
     pub fn update(&mut self, map: &mut Map) {
         match self.state {
             RobotState::MovingToResource  =>{
-                let (target_x, target_y, _) = self.target_resource.unwrap();
-                let path = self.calculate_path(target_x, target_y, map);
-                for (x, y) in path {
-                    if self.move_to(x, y, map) {
-                        break;
+                if let Some((target_x, target_y, _)) = self.target_resource {
+                    let path = self.calculate_path(target_x, target_y, map);
+                    for (x, y) in path {
+                        if self.move_to(x, y, map) {
+                            break;
+                        }
                     }
                 }
             },

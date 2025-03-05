@@ -3,7 +3,6 @@ use rand::Rng;
 
 use crate::environment::{map::Map, tile::{MapTile, Resource, ResourceType, TileType}};
 
-
 pub const CHAR_WIDTH: i32 = 12;
 pub const CHAR_HEIGHT: i32 = 20;
 
@@ -13,6 +12,7 @@ pub enum RobotType {
     Harvester,
 }
 
+#[derive(Debug, Clone, PartialEq, Copy)] 
 pub enum RobotState {
     Exploring,        
     MovingToResource, 
@@ -43,7 +43,7 @@ pub trait Robot {
         }
     }
 
-        fn calculate_path(&self, target_x: usize, target_y: usize, map: &Map) -> Vec<(usize, usize)> {
+    fn calculate_path(&self, target_x: usize, target_y: usize, map: &Map) -> Vec<(usize, usize)> {
         let (start_x, start_y) = self.get_position();
         let mut queue = VecDeque::new();
         let mut came_from = HashMap::new();

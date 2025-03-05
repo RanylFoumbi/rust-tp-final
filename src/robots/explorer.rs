@@ -1,11 +1,9 @@
-use super::robot::{Robot, RobotState, RobotType, CHAR_HEIGHT, CHAR_WIDTH};
-use crate::environment::{
-    map::Map,
-    tile::{MapTile, Resource, ResourceType, TileType},
-};
+use crate::robots::{Robot, RobotState, RobotType}; // Corrigé
+use crate::environment::{Map, MapTile, Resource, ResourceType, TileType};
 use rand::Rng;
 use std::{collections::HashSet, thread, time::Duration};
 
+#[derive(Debug)]
 pub struct Explorer {
     pub x: usize,
     pub y: usize,
@@ -17,8 +15,8 @@ pub struct Explorer {
 impl Robot for Explorer {
     fn new(x: usize, y: usize) -> Self {
         Explorer {
-            x: x,
-            y: y,
+            x,
+            y,
             cargo: Vec::new(),
             cargo_capacity: 5,
             state: RobotState::Exploring,
@@ -49,20 +47,20 @@ impl Robot for Explorer {
 
 impl Explorer {
     pub fn explore(&mut self, map: &mut Map) {
-        let mut rng = rand::rng();
+        let mut rng = rand::thread_rng(); // Correction ici
         
-        // Choose random direction (up, down, left, right)
-        let move_horizontal = rng.random_bool(0.5);
+        // Choisir une direction aléatoire (haut, bas, gauche, droite)
+        let move_horizontal = rng.gen_bool(0.5); // Correction ici
         
         let (direction_x, direction_y) = if move_horizontal {
-            (if rng.random_bool(0.5) { 1 } else { -1 }, 0)
+            (if rng.gen_bool(0.5) { 1 } else { -1 }, 0) // Correction ici
         } else {
-            (0, if rng.random_bool(0.5) { 1 } else { -1 })
+            (0, if rng.gen_bool(0.5) { 1 } else { -1 }) // Correction ici
         };
         
-        // Calculate new position (one step at a time)
-        let new_x = (self.x as i32 + direction_x).clamp(0, (map.width - 1) as i32) as usize;
-        let new_y = (self.y as i32 + direction_y).clamp(0, (map.height - 1) as i32) as usize;
+        // Calculer la nouvelle position (1 pas à la fois)
+        let new_x = (self.x as isize + direction_x).max(0).min((map.width - 1) as isize) as usize;
+        let new_y = (self.y as isize + direction_y).max(0).min((map.height - 1) as isize) as usize;
         
         if self.move_to(new_x, new_y, map) {
             let tile = map.get(self.x, self.y).tile;
@@ -81,7 +79,6 @@ impl Explorer {
         thread::sleep(Duration::from_millis(100));
     }
     
-
     pub fn update(&mut self, map: &mut Map) {
         match self.state {
             RobotState::Exploring => {

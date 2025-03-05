@@ -1,21 +1,7 @@
-mod environment {
-    pub mod map;
-    pub mod tile;
-}
-mod simulation {
-    pub mod simulation;
-}
-mod robots{
-    pub mod robot;
-    pub mod harvester;
-    pub mod explorer;
-}
-mod windows{
-    pub mod graphic_ui;
-    pub mod utils;
-}
-
-use simulation::simulation::Simulation;
+mod simulation;
+use simulation::Simulation;
+mod environment;
+mod robots;
 
 fn main() {
     let mut simulation = Simulation::new();
