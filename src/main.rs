@@ -1,19 +1,7 @@
-mod environment {
-    pub mod map;
-    pub mod tile;
-}
-mod simulation {
-    pub mod simulation;
-}
-mod robots{
-    pub mod robot;
-    pub mod harvester;
-    pub mod explorer;
-}
-mod windows{
-    pub mod graphic_ui;
-    pub mod utils;
-}
+mod simulation;
+mod environment;
+mod robots;
+mod windows;
 
 use simulation::simulation::Simulation;
 

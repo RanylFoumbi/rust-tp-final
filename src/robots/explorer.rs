@@ -45,6 +45,18 @@ impl Robot for Explorer {
         self.x = x;
         self.y = y;
     }
+
+    fn update(&mut self, map: &mut Map) {
+        match self.state {
+            RobotState::Exploring => {
+                self.explore(map);
+            }
+            RobotState::ReturningToBase => {
+                self.return_to_base(map);
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Explorer {
@@ -79,18 +91,5 @@ impl Explorer {
         }
     
         thread::sleep(Duration::from_millis(100));
-    }
-    
-
-    pub fn update(&mut self, map: &mut Map) {
-        match self.state {
-            RobotState::Exploring => {
-                self.explore(map);
-            }
-            RobotState::ReturningToBase => {
-                self.return_to_base(map);
-            }
-            _ => {}
-        }
     }
 }

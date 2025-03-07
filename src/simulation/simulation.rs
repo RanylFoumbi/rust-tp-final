@@ -48,6 +48,53 @@ impl Simulation {
     }
 
     pub fn create_robot(&mut self, robot_type: RobotType) {
-        
+        let map_guard = self.map.lock().unwrap();
+        let base_pos = map_guard.base_position;
+        drop(map_guard);  // Release the lock early
+    
+        // Create robot based on type with position near base
+        let mut robot: Box<dyn Robot + Send> = match robot_type {
+            RobotType::Explorer => Box::new(Explorer::new(
+                base_pos.0.saturating_sub(1),
+                base_pos.1
+            )),
+            RobotType::Harvester => Box::new(Harvester::new(
+                base_pos.0.saturating_add(1),
+                base_pos.1
+            )),
+        };
+    
+        // Create thread for the new robot
+        let map = Arc::clone(&self.map);
+        let running = Arc::clone(&self.running);
+        let thread_handle = thread::spawn(move || {
+            loop {
+                if !running.load(Ordering::SeqCst) {
+                    thread::sleep(Duration::from_millis(500));
+                    continue;
+                }
+    
+                // Update robot state
+                let mut map_guard = map.lock().unwrap();
+                robot.update(&mut map_guard);
+                drop(map_guard);
+    
+                thread::sleep(Duration::from_millis(500));
+            }
+        });
+    
+        // Store thread handle in appropriate collection
+        match robot_type {
+            RobotType::Explorer => {
+                let mut explorer_threads = self.explorer_threads.lock().unwrap();
+                explorer_threads.push_back(thread_handle);
+            }
+            RobotType::Harvester => {
+                let mut harvester_threads = self.harvester_threads.lock().unwrap();
+                harvester_threads.push_back(thread_handle);
+            }
+        }
+    
+        println!("Created new {:?} robot near base at {:?}", robot_type, base_pos);
     }
 }

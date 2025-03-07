@@ -42,6 +42,27 @@ impl Robot for Harvester {
         self.x = x;
         self.y = y;
     }
+
+    fn update(&mut self, map: &mut Map) {
+        match self.state {
+            RobotState::MovingToResource  =>{
+                let (target_x, target_y, _) = self.target_resource.unwrap();
+                let path = self.calculate_path(target_x, target_y, map);
+                for (x, y) in path {
+                    if self.move_to(x, y, map) {
+                        break;
+                    }
+                }
+            },
+            RobotState::Harvesting => {
+                self.harvest(map);
+            },
+            RobotState::ReturningToBase => {
+                self.return_to_base(map);
+            },
+            _ => {}
+        }
+    }
 }
 
 impl Harvester {
@@ -79,26 +100,5 @@ impl Harvester {
 
     pub fn set_target_resource(&mut self, x: usize, y: usize, resource: Resource) {
         self.target_resource = Some((x, y, resource));
-    }
-
-    pub fn update(&mut self, map: &mut Map) {
-        match self.state {
-            RobotState::MovingToResource  =>{
-                let (target_x, target_y, _) = self.target_resource.unwrap();
-                let path = self.calculate_path(target_x, target_y, map);
-                for (x, y) in path {
-                    if self.move_to(x, y, map) {
-                        break;
-                    }
-                }
-            },
-            RobotState::Harvesting => {
-                self.harvest(map);
-            },
-            RobotState::ReturningToBase => {
-                self.return_to_base(map);
-            },
-            _ => {}
-        }
     }
 }
