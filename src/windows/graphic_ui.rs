@@ -19,6 +19,8 @@ pub enum Message {
     CreateHarvester,
     Pause,
     Play,
+    UpSpeed,
+    DownSpeed,
 }
 
 impl Application for MapWindow {
@@ -61,6 +63,8 @@ impl Application for MapWindow {
             }
             Message::Pause => self.simulation.pause(),
             Message::Play => self.simulation.play(),
+            Message::UpSpeed => self.simulation.increase_speed(),
+            Message::DownSpeed => self.simulation.decrease_speed(),
         }
         Command::none()
     }
@@ -97,7 +101,12 @@ impl Application for MapWindow {
             .push(create_button("Create Explorer", Message::CreateExplorer))
             .push(create_button("Create Harvester", Message::CreateHarvester))
             .push(Space::with_height(20))
-            .push(create_button("Play/Pause", toggle_simulation_state()));
+            .push(create_button("Play/Pause", toggle_simulation_state()))
+            .push(Row::new()
+                .push(create_button("Speed up", Message::UpSpeed))
+                .push(Space::with_width(10))
+                .push(create_button("Speed down", Message::DownSpeed))
+            );
 
         let map = self.map_grid.view().map(|_| Message::Tick);
 

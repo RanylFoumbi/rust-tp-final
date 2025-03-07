@@ -15,6 +15,7 @@ pub struct Simulation {
     pub energy_count: u32,
     pub resource_count: u32,
     pub running: Arc<AtomicBool>,
+    pub speed: Arc<Mutex<u64>>,
     explorer_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
     harvester_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
     located_resources: Arc<Mutex<VecDeque<Vec<(usize, usize, Resource)>>>>,
@@ -28,6 +29,7 @@ impl Simulation {
             map,
             energy_count: 0,
             resource_count: 0,
+            speed: Arc::new(Mutex::new(500)),
             running: Arc::new(AtomicBool::new(false)),
             explorer_threads: Arc::new(Mutex::new(VecDeque::new())),
             harvester_threads: Arc::new(Mutex::new(VecDeque::new())),
@@ -45,6 +47,18 @@ impl Simulation {
 
     pub fn run(&mut self) {
         let _ = open_window(self);
+    }
+
+    pub fn increase_speed(&mut self) {
+        let mut speed = self.speed.lock().unwrap();
+        if *speed > 100 {
+            *speed -= 100;
+        }
+    }
+
+    pub fn decrease_speed(&mut self) {
+        let mut speed = self.speed.lock().unwrap();
+        *speed += 100;
     }
 
     pub fn create_robot(&mut self, robot_type: RobotType) {
@@ -65,10 +79,15 @@ impl Simulation {
     
         let map = Arc::clone(&self.map);
         let running = Arc::clone(&self.running);
+        let speed = Arc::clone(&self.speed);
         let thread_handle = thread::spawn(move || {
             loop {
+                let sleep_time = {
+                    let speed = speed.lock().unwrap();
+                    *speed
+                };
                 if !running.load(Ordering::SeqCst) {
-                    thread::sleep(Duration::from_millis(500));
+                    thread::sleep(Duration::from_millis(sleep_time));
                     continue;
                 }
     
@@ -76,7 +95,7 @@ impl Simulation {
                 robot.update(&mut map_guard);
                 drop(map_guard);
     
-                thread::sleep(Duration::from_millis(500));
+                thread::sleep(Duration::from_millis(sleep_time));
             }
         });
     
