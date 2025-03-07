@@ -5,13 +5,13 @@ use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
 use crate::windows::utils::open_window;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock, Mutex};
 use std::thread;
 use std::time::Duration;
 
 #[derive(Clone)]
 pub struct Simulation {
-    pub map: Arc<Mutex<Map>>,
+    pub map: Arc<RwLock<Map>>,
     pub energy_count: u32,
     pub resource_count: u32,
     pub running: Arc<AtomicBool>,
@@ -22,7 +22,7 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new() -> Self {
-        let map = Arc::new(Mutex::new(Map::new(50, 50, 8)));
+        let map = Arc::new(RwLock::new(Map::new(25, 25, 8)));
 
         Simulation {
             map,
@@ -48,11 +48,10 @@ impl Simulation {
     }
 
     pub fn create_robot(&mut self, robot_type: RobotType) {
-        let map_guard = self.map.lock().unwrap();
+        let map_guard = self.map.read().unwrap();
         let base_pos = map_guard.base_position;
-        drop(map_guard);  // Release the lock early
+        drop(map_guard); 
     
-        // Create robot based on type with position near base
         let mut robot: Box<dyn Robot + Send> = match robot_type {
             RobotType::Explorer => Box::new(Explorer::new(
                 base_pos.0.saturating_sub(1),
@@ -64,7 +63,6 @@ impl Simulation {
             )),
         };
     
-        // Create thread for the new robot
         let map = Arc::clone(&self.map);
         let running = Arc::clone(&self.running);
         let thread_handle = thread::spawn(move || {
@@ -74,8 +72,7 @@ impl Simulation {
                     continue;
                 }
     
-                // Update robot state
-                let mut map_guard = map.lock().unwrap();
+                let mut map_guard = map.write().unwrap();
                 robot.update(&mut map_guard);
                 drop(map_guard);
     
@@ -83,7 +80,6 @@ impl Simulation {
             }
         });
     
-        // Store thread handle in appropriate collection
         match robot_type {
             RobotType::Explorer => {
                 let mut explorer_threads = self.explorer_threads.lock().unwrap();

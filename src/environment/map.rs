@@ -22,7 +22,7 @@ impl Map {
         let mut map = Map {
             width,
             height,
-            grid: vec![MapTile::new(0, 0,  TileType::Empty); width * height],
+            grid: vec![MapTile::new(0, 0, TileType::Empty); width * height],
             seed,
             base_position: (0, 0),
         };
@@ -49,11 +49,11 @@ impl Map {
     fn generate_terrain(&mut self) {
         let perlin: Perlin = Perlin::new(self.seed);
 
-        for y in 1..self.height-1 {
-            for x in 1..self.width-1 {
+        for y in 0..self.height {
+            for x in 0..self.width {
                 let noise_value = perlin.get([x as f64 / TERRAIN_SCALE, y as f64 / TERRAIN_SCALE]);
                 if noise_value > THRESHOLD {
-                    self.set(MapTile::new(x, y,TileType::Terrain));
+                    self.set(MapTile::new(x, y, TileType::Terrain));
                 }
             }
         }
@@ -88,14 +88,13 @@ impl Map {
             let y = rng.random_range(1..self.height-1);
     
             if self.get(x, y).tile == TileType::Empty {
-                self.set(MapTile::new(x, y,  TileType::Base));
+                self.set(MapTile::new(x, y, TileType::Base));
                 self.base_position = (x, y);
                 break;
             }
         }
     }
 
-    //for debugging purposes
     pub fn display_in_terminal(&self) {
         for y in 0..self.height {
             for x in 0..self.width {
@@ -105,14 +104,8 @@ impl Map {
         }
     }
 
-    pub fn is_valid(&self, x: usize, y: usize, from_x: usize, from_y: usize) -> bool {
-        if !(x < self.width && y < self.height && self.get(x, y).tile == TileType::Empty) {
-            return false;
-        }
-    
-        let x_diff = if x >= from_x { x - from_x } else { from_x - x };
-        let y_diff = if y >= from_y { y - from_y } else { from_y - y };
-        
-        (x_diff == 1 && y_diff == 0) || (x_diff == 0 && y_diff == 1)
+    pub fn is_valid(&self, x: usize, y: usize) -> bool {
+        x < self.width && y < self.height && (self.get(x, y).tile == TileType::Empty 
+        || matches!(self.get(x, y).tile, TileType::Resource(_)))
     }
 }

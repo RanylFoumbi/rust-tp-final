@@ -3,10 +3,6 @@ use rand::Rng;
 
 use crate::environment::{map::Map, tile::{MapTile, Resource, ResourceType, TileType}};
 
-
-pub const CHAR_WIDTH: i32 = 12;
-pub const CHAR_HEIGHT: i32 = 20;
-
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum RobotType {
     Explorer,    
@@ -31,8 +27,7 @@ pub trait Robot {
     fn update(&mut self, map: &mut Map);
 
     fn move_to(&mut self, x: usize, y: usize, map: &mut Map) -> bool {
-        let (old_x, old_y) = self.get_position();
-        if map.is_valid(x, y, old_x, old_y) {
+        if map.is_valid(x, y) {
             let (old_x, old_y) = self.get_position();
             map.set(MapTile::new(old_x, old_y, TileType::Empty));
             
@@ -61,7 +56,7 @@ pub trait Robot {
                 let new_x = x.wrapping_add(dx as usize);
                 let new_y = y.wrapping_add(dy as usize);
     
-                if map.is_valid(new_x, new_y, x, y) && !came_from.contains_key(&(new_x, new_y)) {
+                if map.is_valid(new_x, new_y) && !came_from.contains_key(&(new_x, new_y)) {
                     queue.push_back((new_x, new_y));
                     came_from.insert((new_x, new_y), Some((x, y)));
                 }

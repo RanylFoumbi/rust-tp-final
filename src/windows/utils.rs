@@ -13,15 +13,15 @@ pub fn create_button(label: &str, message: Message) -> Button<Message> {
     .on_press(message)
 }
 
-pub fn open_window(simulation: &Simulation) -> iced::Result{
-    let tile_size = 16;
+pub fn open_window(simulation: &Simulation) -> iced::Result {
+    let tile_size = 30;
     let control_width = 200;
-    let padding = 20;
+    let padding = 10;
 
     let (window_width, window_height) = {
-        let map_guard = simulation.map.lock().unwrap();
+        let map_guard = simulation.map.read().unwrap();
         let width = (map_guard.width as u32 * tile_size) + control_width + padding;
-        let height = (map_guard.height as u32 * tile_size) + padding;
+        let height = map_guard.height as u32 * tile_size + padding;
         (width, height)
     };
     
