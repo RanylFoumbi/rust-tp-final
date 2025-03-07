@@ -103,9 +103,9 @@ impl Application for MapWindow {
             .push(Space::with_height(20))
             .push(create_button("Play/Pause", toggle_simulation_state()))
             .push(Row::new()
-                .push(create_button("Speed up", Message::UpSpeed))
+                .push(create_button("Speed +", Message::UpSpeed))
                 .push(Space::with_width(10))
-                .push(create_button("Speed down", Message::DownSpeed))
+                .push(create_button("Speed -", Message::DownSpeed))
             );
 
         let map = self.map_grid.view().map(|_| Message::Tick);

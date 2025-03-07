@@ -1,7 +1,9 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, thread, time::Duration};
+use std::{collections::{HashMap, VecDeque}, any::Any};
 use rand::Rng;
 
-use crate::environment::{map::Map, tile::{MapTile, Resource, ResourceType, TileType}};
+use crate::environment::{map::Map, tile::{MapTile, Resource, TileType}};
+
+use super::explorer::Explorer;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum RobotType {
@@ -17,7 +19,7 @@ pub enum RobotState {
     Idle            
 }
 
-pub trait Robot {
+pub trait Robot: Any {
     fn new(x: usize, y: usize) -> Self where Self: Sized;
     
     fn get_position(&self) -> (usize, usize);
@@ -25,21 +27,21 @@ pub trait Robot {
     fn set_state(&mut self, state: RobotState);
     fn get_type(&self) -> RobotType;
     fn update(&mut self, map: &mut Map);
+    fn get_current_resource(&self) -> Option<MapTile>;
 
-    fn move_to(&mut self, x: usize, y: usize, map: &mut Map) -> bool {
+    fn move_to(&mut self, x: usize, y: usize, map: &mut Map) -> Option<MapTile> {
         if map.is_valid(x, y) {
+            let prev_tile = map.get(x, y);
             let (old_x, old_y) = self.get_position();
             map.set(MapTile::new(old_x, old_y, TileType::Empty));
-            
-            self.set_position(x, y);
             map.set(MapTile::new(x, y, TileType::Robot(self.get_type())));
-            true
+            Some(prev_tile)
         } else {
-            false
+            None
         }
     }
 
-        fn calculate_path(&self, target_x: usize, target_y: usize, map: &Map) -> Vec<(usize, usize)> {
+    fn calculate_next_step(&self, target_x: usize, target_y: usize, map: &Map) -> Option<(usize, usize)> {
         let (start_x, start_y) = self.get_position();
         let mut queue = VecDeque::new();
         let mut came_from = HashMap::new();
@@ -70,21 +72,19 @@ pub trait Robot {
             path.push(pos);
             current = came_from.get(&pos).cloned().flatten();
         }
-    
+
         path.reverse();
-        path
+        path.get(0).cloned()
     }
 
     fn set_position(&mut self, x: usize, y: usize);
 
     fn return_to_base(&mut self, map: &mut Map) {
         let (base_x, base_y) = map.base_position;
-        let path = self.calculate_path(base_x, base_y, map);
 
-        for (x, y) in path {
-            if self.move_to(x, y, map) {
-                continue;
-            }
+        if let Some((x, y)) = self.calculate_next_step(base_x, base_y, map) {
+            self.move_to(x, y, map);
+            self.set_position(x, y);
         }
     }
 }

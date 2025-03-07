@@ -43,14 +43,24 @@ impl Robot for Harvester {
         self.y = y;
     }
 
+    fn get_current_resource(&self) -> Option<MapTile> {
+        None
+    }
+
     fn update(&mut self, map: &mut Map) {
         match self.state {
             RobotState::MovingToResource  =>{
                 let (target_x, target_y, _) = self.target_resource.unwrap();
-                let path = self.calculate_path(target_x, target_y, map);
-                for (x, y) in path {
-                    if self.move_to(x, y, map) {
-                        break;
+                let step = self.calculate_next_step(target_x, target_y, map);
+                match step {
+                    Some((x, y)) => {
+                        self.move_to(x, y, map);
+                        if x == target_x && y == target_y {
+                            self.set_state(RobotState::Harvesting);
+                        }
+                    },
+                    None => {
+                        self.set_state(RobotState::ReturningToBase);
                     }
                 }
             },
