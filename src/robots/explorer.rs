@@ -4,7 +4,6 @@ use crate::environment::{
     tile::{MapTile, TileType},
 };
 use rand::Rng;
-use std::{thread, time::Duration};
 
 pub struct Explorer {
     pub x: usize,
@@ -80,7 +79,8 @@ impl Explorer {
                 match map_tile.tile {
                     TileType::Resource(_) => {
                         self.resource = Some(map_tile);
-                        self.state = RobotState::ReturningToBase;
+                        print!("Explorer found a resource at ({}, {})\n", new_x, new_y);
+                        self.set_state(RobotState::ReturningToBase);
                     }
                     _ => {}
                 }

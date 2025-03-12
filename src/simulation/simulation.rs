@@ -1,5 +1,5 @@
 use crate::environment::map::Map;
-use crate::environment::tile::{MapTile, Resource, TileType};
+// use crate::environment::tile::Resource;
 use crate::robots::robot::RobotType;
 use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
 use crate::windows::utils::open_window;
@@ -18,7 +18,7 @@ pub struct Simulation {
     pub speed: Arc<Mutex<u64>>,
     explorer_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
     harvester_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
-    located_resources: Arc<Mutex<VecDeque<Vec<(usize, usize, Resource)>>>>,
+    // located_resources: Arc<Mutex<VecDeque<Vec<(usize, usize, Resource)>>>>,
 }
 
 impl Simulation {
@@ -33,7 +33,7 @@ impl Simulation {
             running: Arc::new(AtomicBool::new(false)),
             explorer_threads: Arc::new(Mutex::new(VecDeque::new())),
             harvester_threads: Arc::new(Mutex::new(VecDeque::new())),
-            located_resources: Arc::new(Mutex::new(VecDeque::new())),
+            // located_resources: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 

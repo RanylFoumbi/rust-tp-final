@@ -1,9 +1,7 @@
 use std::{collections::{HashMap, VecDeque}, any::Any};
-use rand::Rng;
 
-use crate::environment::{map::Map, tile::{MapTile, Resource, TileType}};
+use crate::environment::{map::Map, tile::{MapTile, TileType}};
 
-use super::explorer::Explorer;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum RobotType {
@@ -16,7 +14,7 @@ pub enum RobotState {
     MovingToResource, 
     Harvesting,       
     ReturningToBase, 
-    Idle            
+    // Idle            
 }
 
 pub trait Robot: Any {
@@ -33,8 +31,19 @@ pub trait Robot: Any {
         if map.is_valid(x, y) {
             let prev_tile = map.get(x, y);
             let (old_x, old_y) = self.get_position();
-            map.set(MapTile::new(old_x, old_y, TileType::Empty));
-            map.set(MapTile::new(x, y, TileType::Robot(self.get_type())));
+            if map.get(old_x, old_y).tile == TileType::Robot(self.get_type()) {
+                map.set(MapTile::new(old_x, old_y, TileType::Empty));
+            }
+            match prev_tile.tile {
+                TileType::Resource(_) if self.get_type() == RobotType::Explorer => {
+                    if let Some(resource) = self.get_current_resource() {
+                        map.set(resource);
+                    }
+                }
+                _ => {
+                    map.set(MapTile::new(x, y, TileType::Robot(self.get_type())));
+                }
+            }
             Some(prev_tile)
         } else {
             None
@@ -43,38 +52,63 @@ pub trait Robot: Any {
 
     fn calculate_next_step(&self, target_x: usize, target_y: usize, map: &Map) -> Option<(usize, usize)> {
         let (start_x, start_y) = self.get_position();
+        if start_x == target_x && start_y == target_y {
+            return None;
+        }
+        
         let mut queue = VecDeque::new();
         let mut came_from = HashMap::new();
-    
+        
         queue.push_back((start_x, start_y));
         came_from.insert((start_x, start_y), None);
-    
+        
         while let Some((x, y)) = queue.pop_front() {
             if x == target_x && y == target_y {
                 break;
             }
-    
+        
             for &(dx, dy) in &[(0, 1), (1, 0), (0, -1), (-1, 0)] {
-                let new_x = x.wrapping_add(dx as usize);
-                let new_y = y.wrapping_add(dy as usize);
-    
+                let new_x = x as isize + dx;
+                let new_y = y as isize + dy;
+            
+                if new_x < 0 || new_y < 0 {
+                    continue;
+                }
+            
+                let new_x = new_x as usize;
+                let new_y = new_y as usize;
+            
                 if map.is_valid(new_x, new_y) && !came_from.contains_key(&(new_x, new_y)) {
                     queue.push_back((new_x, new_y));
                     came_from.insert((new_x, new_y), Some((x, y)));
                 }
             }
         }
-    
+        
+        if !came_from.contains_key(&(target_x, target_y)) {
+            let step_x = if start_x < target_x { start_x + 1 } else if start_x > target_x { start_x - 1 } else { start_x };
+            let step_y = if start_y < target_y { start_y + 1 } else if start_y > target_y { start_y - 1 } else { start_y };
+            if map.is_valid(step_x, step_y) {
+                return Some((step_x, step_y));
+            } else {
+                return None;
+            }
+        }
+        
         let mut path = Vec::new();
         let mut current = Some((target_x, target_y));
-    
+        
         while let Some(pos) = current {
             path.push(pos);
             current = came_from.get(&pos).cloned().flatten();
         }
-
+        
         path.reverse();
-        path.get(0).cloned()
+        if path.len() > 1 {
+            Some(path[1])
+        } else {
+            None
+        }
     }
 
     fn set_position(&mut self, x: usize, y: usize);

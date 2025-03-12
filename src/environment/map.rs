@@ -95,15 +95,6 @@ impl Map {
         }
     }
 
-    pub fn display_in_terminal(&self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                print!("{}", self.get(x, y).tile.char());
-            }
-            println!();
-        }
-    }
-
     pub fn is_valid(&self, x: usize, y: usize) -> bool {
         x < self.width && y < self.height && (self.get(x, y).tile == TileType::Empty 
         || matches!(self.get(x, y).tile, TileType::Resource(_)))

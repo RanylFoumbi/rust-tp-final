@@ -104,11 +104,11 @@ impl Harvester {
         self.energy = self.energy.saturating_sub(amount);
     }
 
-    pub fn get_energy(&self) -> u32 {
-        self.energy
-    }
+    // pub fn get_energy(&self) -> u32 {
+    //     self.energy
+    // }
 
-    pub fn set_target_resource(&mut self, x: usize, y: usize, resource: Resource) {
-        self.target_resource = Some((x, y, resource));
-    }
+    // pub fn set_target_resource(&mut self, x: usize, y: usize, resource: Resource) {
+    //     self.target_resource = Some((x, y, resource));
+    // }
 }
