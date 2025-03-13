@@ -1,6 +1,6 @@
 use crate::environment::map::Map;
 // use crate::environment::tile::Resource;
-use crate::robots::robot::RobotType;
+use crate::robots::robot::{RobotState, RobotType};
 use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
 use crate::windows::utils::open_window;
 use std::collections::VecDeque;
@@ -68,11 +68,11 @@ impl Simulation {
     
         let mut robot: Box<dyn Robot + Send> = match robot_type {
             RobotType::Explorer => Box::new(Explorer::new(
-                base_pos.0.saturating_sub(1),
+                base_pos.0,
                 base_pos.1
             )),
             RobotType::Harvester => Box::new(Harvester::new(
-                base_pos.0.saturating_add(1),
+                base_pos.0,
                 base_pos.1
             )),
         };
@@ -82,6 +82,10 @@ impl Simulation {
         let speed = Arc::clone(&self.speed);
         let thread_handle = thread::spawn(move || {
             loop {
+                if robot.get_state() == RobotState::Idle {
+
+                    break;
+                }
                 let sleep_time = {
                     let speed = speed.lock().unwrap();
                     *speed

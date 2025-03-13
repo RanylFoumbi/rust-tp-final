@@ -1,3 +1,5 @@
+use std::clone;
+
 use super::robot::{Robot, RobotState, RobotType};
 use crate::environment::{map::Map, tile::{MapTile, Resource, TileType}};
 
@@ -30,8 +32,8 @@ impl Robot for Harvester {
         (self.x, self.y)
     }
 
-    fn get_state(&self) -> &RobotState { 
-        &self.state 
+    fn get_state(&self) -> RobotState { 
+        self.state.clone()
     }
 
     fn set_state(&mut self, state: RobotState) {

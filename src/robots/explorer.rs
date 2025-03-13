@@ -30,8 +30,8 @@ impl Robot for Explorer {
         (self.x, self.y)
     }
 
-    fn get_state(&self) -> &RobotState {
-        &self.state
+    fn get_state(&self) -> RobotState {
+        self.state.clone()
     }
 
     fn set_state(&mut self, state: RobotState) {

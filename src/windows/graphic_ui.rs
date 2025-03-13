@@ -30,7 +30,7 @@ impl Application for MapWindow {
     type Flags = Simulation;
 
     fn new(simulation: Simulation) -> (Self, Command<Message>) {
-        let bas_font = Font::with_name("Apple Color Emoji");
+        let bas_font = Font::with_name("Segoe UI Emoji");
         let map_grid = MapGrid::new(simulation.map.clone(), bas_font);
 
         (
@@ -74,8 +74,6 @@ impl Application for MapWindow {
     }
 
     fn view(&self) -> Element<Message> {
-        let bas_font = Font::with_name("Segoe UI Emoji");
-
         let simulation_status = format!(
             "Simulation status\nEnergy: {}\nResources: {}",
             self.simulation.energy_count, self.simulation.resource_count,
@@ -96,7 +94,7 @@ impl Application for MapWindow {
             .spacing(10)
             .padding(10)
             .width(Length::FillPortion(2)) 
-            .push(Text::new(simulation_status).font(bas_font))
+            .push(Text::new(simulation_status).font(self.map_grid.font))
             .push(Space::with_height(20))
             .push(create_button("Create Explorer", Message::CreateExplorer))
             .push(create_button("Create Harvester", Message::CreateHarvester))

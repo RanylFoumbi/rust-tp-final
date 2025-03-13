@@ -9,19 +9,20 @@ pub enum RobotType {
     Harvester,
 }
 
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum RobotState {
     Exploring,        
     MovingToResource, 
     Harvesting,       
     ReturningToBase, 
-    // Idle            
+    Idle            
 }
 
 pub trait Robot: Any {
     fn new(x: usize, y: usize) -> Self where Self: Sized;
     
     fn get_position(&self) -> (usize, usize);
-    fn get_state(&self) -> &RobotState;
+    fn get_state(&self) -> RobotState;
     fn set_state(&mut self, state: RobotState);
     fn get_type(&self) -> RobotType;
     fn update(&mut self, map: &mut Map);
@@ -50,7 +51,7 @@ pub trait Robot: Any {
         }
     }
 
-    fn calculate_next_step(&self, target_x: usize, target_y: usize, map: &Map) -> Option<(usize, usize)> {
+        fn calculate_next_step(&self, target_x: usize, target_y: usize, map: &Map) -> Option<(usize, usize)> {
         let (start_x, start_y) = self.get_position();
         if start_x == target_x && start_y == target_y {
             return None;
@@ -79,8 +80,11 @@ pub trait Robot: Any {
                 let new_y = new_y as usize;
             
                 if map.is_valid(new_x, new_y) && !came_from.contains_key(&(new_x, new_y)) {
-                    queue.push_back((new_x, new_y));
-                    came_from.insert((new_x, new_y), Some((x, y)));
+                    let tile = map.get(new_x, new_y);
+                    if tile.tile != TileType::Terrain {
+                        queue.push_back((new_x, new_y));
+                        came_from.insert((new_x, new_y), Some((x, y)));
+                    }
                 }
             }
         }
@@ -89,10 +93,12 @@ pub trait Robot: Any {
             let step_x = if start_x < target_x { start_x + 1 } else if start_x > target_x { start_x - 1 } else { start_x };
             let step_y = if start_y < target_y { start_y + 1 } else if start_y > target_y { start_y - 1 } else { start_y };
             if map.is_valid(step_x, step_y) {
-                return Some((step_x, step_y));
-            } else {
-                return None;
+                let tile = map.get(step_x, step_y);
+                if tile.tile != TileType::Terrain {
+                    return Some((step_x, step_y));
+                }
             }
+            return None;
         }
         
         let mut path = Vec::new();
@@ -116,9 +122,16 @@ pub trait Robot: Any {
     fn return_to_base(&mut self, map: &mut Map) {
         let (base_x, base_y) = map.base_position;
 
-        if let Some((x, y)) = self.calculate_next_step(base_x, base_y, map) {
-            self.move_to(x, y, map);
-            self.set_position(x, y);
+        match self.calculate_next_step(base_x, base_y, map) {
+            Some((x, y)) => {
+                self.move_to(x, y, map);
+                self.set_position(x, y);
+            }
+            None => {
+                let position = self.get_position();
+                map.set(MapTile::new(position.0, position.1, TileType::Empty));
+                self.set_state(RobotState::Idle);
+            }
         }
     }
 }

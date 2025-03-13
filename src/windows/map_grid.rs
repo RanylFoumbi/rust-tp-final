@@ -7,7 +7,7 @@ use super::graphic_ui::Message;
 
 pub struct MapGrid {
     map: Arc<RwLock<Map>>,
-    font: Font,
+    pub font: Font,
     map_content: String,
 }
 
