@@ -74,9 +74,13 @@ impl Application for MapWindow {
     }
 
     fn view(&self) -> Element<Message> {
+        let located_resources_count = {
+            let located_resources = self.simulation.located_resources.lock().unwrap();
+            located_resources.len()
+        };
         let simulation_status = format!(
-            "Simulation status\nEnergy: {}\nResources: {}",
-            self.simulation.energy_count, self.simulation.resource_count,
+            "Simulation status\nResources located: {}\nResources harvested: {}",
+            located_resources_count, self.simulation.resource_count,
         );
 
         let toggle_simulation_state = || -> Message {
@@ -96,8 +100,7 @@ impl Application for MapWindow {
             .width(Length::FillPortion(2)) 
             .push(Text::new(simulation_status).font(self.map_grid.font))
             .push(Space::with_height(20))
-            .push(create_button("Create Explorer", Message::CreateExplorer))
-            .push(create_button("Create Harvester", Message::CreateHarvester))
+            .push(create_button("Send Explorer", Message::CreateExplorer))
             .push(Space::with_height(20))
             .push(create_button("Play/Pause", toggle_simulation_state()))
             .push(Row::new()

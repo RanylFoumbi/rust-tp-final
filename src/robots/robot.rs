@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, VecDeque}, any::Any};
 
-use crate::environment::{map::Map, tile::{MapTile, TileType}};
+use crate::environment::{map::Map, tile::{MapTile, Resource, TileType}};
 
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -26,7 +26,7 @@ pub trait Robot: Any {
     fn set_state(&mut self, state: RobotState);
     fn get_type(&self) -> RobotType;
     fn update(&mut self, map: &mut Map);
-    fn get_current_resource(&self) -> Option<MapTile>;
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource)>;
 
     fn move_to(&mut self, x: usize, y: usize, map: &mut Map) -> Option<MapTile> {
         if map.is_valid(x, y) {
@@ -37,8 +37,8 @@ pub trait Robot: Any {
             }
             match prev_tile.tile {
                 TileType::Resource(_) if self.get_type() == RobotType::Explorer => {
-                    if let Some(resource) = self.get_current_resource() {
-                        map.set(resource);
+                    if let Some((x, y, resource)) = self.get_current_resource() {
+                        map.set(MapTile::new(x, y, TileType::Resource(resource)));
                     }
                 }
                 _ => {

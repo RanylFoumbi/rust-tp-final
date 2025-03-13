@@ -1,14 +1,14 @@
 use super::robot::{Robot, RobotState, RobotType};
 use crate::environment::{
     map::Map,
-    tile::{MapTile, TileType},
+    tile::{MapTile, TileType, Resource},
 };
 use rand::Rng;
 
 pub struct Explorer {
     pub x: usize,
     pub y: usize,
-    pub resource: Option<MapTile>,
+    pub resource: Option<(usize, usize, Resource)>,
     pub state: RobotState,
 }
 
@@ -54,7 +54,7 @@ impl Robot for Explorer {
             _ => {}
         }
     }
-    fn get_current_resource(&self) -> Option<MapTile> {
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource)> {
         self.resource
     }
 }
@@ -77,8 +77,8 @@ impl Explorer {
         match self.move_to(new_x, new_y, map) {
             Some(map_tile) => {
                 match map_tile.tile {
-                    TileType::Resource(_) => {
-                        self.resource = Some(map_tile);
+                    TileType::Resource(resource) => {
+                        self.resource = Some((map_tile.x, map_tile.y, resource));
                         print!("Explorer found a resource at ({}, {})\n", new_x, new_y);
                         self.set_state(RobotState::ReturningToBase);
                     }

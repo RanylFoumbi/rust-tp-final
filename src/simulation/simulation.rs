@@ -1,4 +1,5 @@
 use crate::environment::map::Map;
+use crate::environment::tile::Resource;
 // use crate::environment::tile::Resource;
 use crate::robots::robot::{RobotState, RobotType};
 use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
@@ -6,7 +7,7 @@ use crate::windows::utils::open_window;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock, Mutex};
-use std::thread;
+use std::{clone, thread};
 use std::time::Duration;
 
 #[derive(Clone)]
@@ -18,7 +19,7 @@ pub struct Simulation {
     pub speed: Arc<Mutex<u64>>,
     explorer_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
     harvester_threads: Arc<Mutex<VecDeque<thread::JoinHandle<()>>>>,
-    // located_resources: Arc<Mutex<VecDeque<Vec<(usize, usize, Resource)>>>>,
+    pub located_resources: Arc<Mutex<VecDeque<Vec<(usize, usize, Resource)>>>>,
 }
 
 impl Simulation {
@@ -33,7 +34,7 @@ impl Simulation {
             running: Arc::new(AtomicBool::new(false)),
             explorer_threads: Arc::new(Mutex::new(VecDeque::new())),
             harvester_threads: Arc::new(Mutex::new(VecDeque::new())),
-            // located_resources: Arc::new(Mutex::new(VecDeque::new())),
+            located_resources: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
@@ -80,10 +81,11 @@ impl Simulation {
         let map = Arc::clone(&self.map);
         let running = Arc::clone(&self.running);
         let speed = Arc::clone(&self.speed);
+        let self_clone  = self.clone();
         let thread_handle = thread::spawn(move || {
             loop {
                 if robot.get_state() == RobotState::Idle {
-
+                    self_clone.robot_coming_back(&robot);
                     break;
                 }
                 let sleep_time = {
@@ -116,4 +118,25 @@ impl Simulation {
     
         println!("Created new {:?} robot near base at {:?}", robot_type, base_pos);
     }
+
+    fn robot_coming_back(&self, robot: &Box<dyn Robot + Send>) {
+        match robot.get_type() {
+            RobotType::Explorer => {
+                let found_resource = robot.get_current_resource();
+                if let Some((res_x, res_y, resource)) = found_resource {
+                    let mut located_resources = self.located_resources.lock().unwrap();
+                    let resource_exists = located_resources.iter().any(|resources| {
+                        resources.iter().any(|(x, y, _)| *x ==  res_x && *y == res_y)
+                    });
+    
+                    if !resource_exists {
+                        located_resources.push_back(vec![(res_x, res_y, resource)]);
+                    }
+                }
+            }
+            RobotType::Harvester => {
+            }
+        }
+    }
+
 }

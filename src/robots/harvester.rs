@@ -45,7 +45,7 @@ impl Robot for Harvester {
         self.y = y;
     }
 
-    fn get_current_resource(&self) -> Option<MapTile> {
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource)> {
         None
     }
 
@@ -105,12 +105,4 @@ impl Harvester {
     fn decrease_energy(&mut self, amount: u32) {
         self.energy = self.energy.saturating_sub(amount);
     }
-
-    // pub fn get_energy(&self) -> u32 {
-    //     self.energy
-    // }
-
-    // pub fn set_target_resource(&mut self, x: usize, y: usize, resource: Resource) {
-    //     self.target_resource = Some((x, y, resource));
-    // }
 }
