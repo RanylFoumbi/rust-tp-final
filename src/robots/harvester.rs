@@ -75,35 +75,48 @@ impl Robot for Harvester {
 
 impl Harvester {
     pub fn harvest(&mut self, map: &mut Map) {
-        if let Some((x, y, resource, _)) = self.target_resource {
+        if let Some((x, y, _, _)) = self.target_resource {
             let step = self.calculate_next_step(x, y, map);
             match step {
-                Some((x, y)) => {
-                    self.move_to(x, y, map);
-                    self.set_position(x, y);
+                Some((next_x, next_y)) => {
+                    if next_x == x && next_y == y {
+                        let tile = map.get(x, y);
+                        match tile.tile {
+                            TileType::Resource(res) => {
+                                if res.scale > self.cargo_capacity {
+                                    self.set_target_resource(Some((
+                                        x,
+                                        y,
+                                        Resource::new(self.cargo_capacity, res.resource_type),
+                                        Some(true),
+                                    )));
+                                    map.set(MapTile::new(
+                                        x,
+                                        y,
+                                        TileType::Resource(Resource::new(
+                                            res.scale - self.cargo_capacity,
+                                            res.resource_type,
+                                        )),
+                                    ));
+                                } else {
+                                    self.set_target_resource(Some((
+                                        x,
+                                        y,
+                                        Resource::new(res.scale, res.resource_type),
+                                        Some(false),
+                                    )));
+                                    map.set(MapTile::new(x, y, TileType::Empty));
+                                }
+                            }
+                            _ => {}
+                        }
+                        self.set_state(RobotState::ReturningToBase);
+                    } else {
+                        self.move_to(next_x, next_y, map);
+                        self.set_position(next_x, next_y);
+                    }
                 }
-                None => {
-                    let amount = resource.scale.min(self.cargo_capacity);
-                    let remaining = resource.scale - amount;
-
-                    map.set(MapTile::new(
-                        x,
-                        y,
-                        if remaining > 0 {
-                            self.set_target_resource(Some((
-                                x,
-                                y,
-                                Resource::new(remaining, resource.resource_type),
-                                Some(true),
-                            )));
-                            TileType::Resource(Resource::new(remaining, resource.resource_type))
-                        } else {
-                            self.set_target_resource(None);
-                            TileType::Empty
-                        },
-                    ));
-                    self.set_state(RobotState::ReturningToBase);
-                }
+                None => {}
             }
         }
     }

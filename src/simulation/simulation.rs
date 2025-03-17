@@ -13,7 +13,6 @@ use std::time::Duration;
 pub struct Simulation {
     pub map: Arc<RwLock<Map>>,
     pub energy_count: Arc<Mutex<u32>>,
-    pub resource_count: Arc<Mutex<u32>>,
     pub running: Arc<AtomicBool>,
     pub speed: Arc<Mutex<u64>>,
     frame_count: u64,
@@ -30,8 +29,7 @@ impl Simulation {
 
         Simulation {
             map,
-            energy_count: Arc::new(Mutex::new(5)),
-            resource_count: Arc::new(Mutex::new(0)),
+            energy_count: Arc::new(Mutex::new(0)),
             speed: Arc::new(Mutex::new(500)),
             running: Arc::new(AtomicBool::new(false)),
             frame_count: 0,
@@ -75,7 +73,9 @@ impl Simulation {
 
     pub fn decrease_speed(&mut self) {
         let mut speed = self.speed.lock().unwrap();
-        *speed += 100;
+        if *speed < 500 {
+            *speed += 100;
+        }
     }
 
     pub fn send_robot<F>(&mut self, robot_type: RobotType, call_bak: F)
@@ -155,19 +155,15 @@ impl Simulation {
                         resources.iter().any(|(x, y, _)| *x == res_x && *y == res_y)
                     });
                     if !resource_exists {
-                        let mut energy_count = self.energy_count.lock().unwrap();
-                        if *energy_count >= 5 {
-                            *energy_count -= 5;
-                            located_resources.push_back(vec![(res_x, res_y, resource.clone())]);
-                            self_clone.send_robot(RobotType::Harvester, move |harvester| {
-                                harvester.set_target_resource(Some((
-                                    res_x,
-                                    res_y,
-                                    resource,
-                                    Some(true),
-                                )));
-                            });
-                        }
+                        located_resources.push_back(vec![(res_x, res_y, resource.clone())]);
+                        self_clone.send_robot(RobotType::Harvester, move |harvester| {
+                            harvester.set_target_resource(Some((
+                                res_x,
+                                res_y,
+                                resource,
+                                Some(true),
+                            )));
+                        });
                     }
                 }
                 self.join_thread(robot);
@@ -180,16 +176,12 @@ impl Simulation {
                             let mut energy_count = self_clone.energy_count.lock().unwrap();
                             *energy_count += resource.scale;
                         }
-                        crate::environment::tile::ResourceType::Mineral => {
-                            let mut resource_count = self_clone.resource_count.lock().unwrap();
-                            *resource_count += resource.scale;
-                        }
+                        _ => {}
                     }
-                    let re = remind.unwrap();
-                    if re {
-                        robot.set_state(RobotState::Harvesting);
-                    } else {
-                        self.join_thread(robot);
+
+                    match remind {
+                        Some(true) => robot.set_state(RobotState::Harvesting),
+                        _ => self.join_thread(robot),
                     }
                 }
             }

@@ -81,10 +81,9 @@ impl Application for MapWindow {
             located_resources.len()
         };
         let energy_count = self.simulation.energy_count.lock().unwrap();
-        let resource_count = self.simulation.resource_count.lock().unwrap();
         let simulation_status = format!(
-            "Simulation status\nFPS: {}\nResources located: {}\nResources harvested: {}\nEnergy: {}",
-            self.simulation.fps, located_resources_count, resource_count, energy_count,
+            "Simulation status\nFPS: {}\nResources located: {}\nEnergy: {}",
+            self.simulation.fps, located_resources_count, energy_count,
         );
 
         let toggle_simulation_state = || -> Message {
