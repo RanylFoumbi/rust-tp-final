@@ -48,6 +48,7 @@ impl Application for MapWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::Tick => {
+                self.simulation.compute_fps();
                 if let Ok(mut map) = self.simulation.map.write() {
                     self.map_grid.update(&mut map);
                 } else {
@@ -79,9 +80,11 @@ impl Application for MapWindow {
             let located_resources = self.simulation.located_resources.lock().unwrap();
             located_resources.len()
         };
+        let energy_count = self.simulation.energy_count.lock().unwrap();
+        let resource_count = self.simulation.resource_count.lock().unwrap();
         let simulation_status = format!(
-            "Simulation status\nResources located: {}\nResources harvested: {}",
-            located_resources_count, self.simulation.resource_count,
+            "Simulation status\nFPS: {}\nResources located: {}\nResources harvested: {}\nEnergy: {}",
+            self.simulation.fps, located_resources_count, resource_count, energy_count,
         );
 
         let toggle_simulation_state = || -> Message {
@@ -115,7 +118,8 @@ impl Application for MapWindow {
 
         Container::new(
             Row::new()
-                .push(Container::new(map).width(Length::FillPortion(8)))
+                .push(Container::new(map)
+                .width(Length::FillPortion(8)))
                 .push(controls),
         )
         .width(Length::Fill)
