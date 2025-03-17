@@ -2,15 +2,26 @@ use iced::{widget::{Button, Text}, Application, Length, Settings};
 use crate::simulation::simulation::Simulation;
 use super::graphic_ui::{MapWindow, Message};
 
-pub fn create_button(label: &str, message: Message) -> Button<Message> {
-    Button::new(
+pub fn create_button(label: &str, message: Message, enabled: bool ) -> Button<Message> {
+    let mut button = Button::new(
         Text::new(label)
             .horizontal_alignment(iced::alignment::Horizontal::Center)
             .vertical_alignment(iced::alignment::Vertical::Center)
-            .width(Length::FillPortion(10)),
+            .width(Length::FillPortion(10)
+        )
     )
-    .width(Length::Fill)
-    .on_press(message)
+    .style(if enabled {
+        iced::theme::Button::Primary
+    } else {
+        iced::theme::Button::Secondary
+    })
+    .width(Length::Fill);
+
+    if enabled {
+        button = button.on_press(message);
+    }
+
+    button
 }
 
 pub fn open_window(simulation: &Simulation) -> iced::Result {

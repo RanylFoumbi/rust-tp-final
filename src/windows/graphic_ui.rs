@@ -15,8 +15,7 @@ pub struct MapWindow {
 #[derive(Debug, Clone)]
 pub enum Message {
     Tick,
-    CreateExplorer,
-    CreateHarvester,
+    SendExplorer,
     Pause,
     Play,
     UpSpeed,
@@ -55,11 +54,8 @@ impl Application for MapWindow {
                     eprintln!("Failed to lock map for update");
                 }
             }
-            Message::CreateExplorer => {
-                self.simulation.create_robot(RobotType::Explorer);
-            }
-            Message::CreateHarvester => {
-                self.simulation.create_robot(RobotType::Harvester);
+            Message::SendExplorer => {
+                self.simulation.send_robot(RobotType::Explorer, |_| {});
             }
             Message::Pause => self.simulation.pause(),
             Message::Play => self.simulation.play(),
@@ -74,6 +70,11 @@ impl Application for MapWindow {
     }
 
     fn view(&self) -> Element<Message> {
+        let is_running = self
+            .simulation
+            .running
+            .load(std::sync::atomic::Ordering::SeqCst);
+
         let located_resources_count = {
             let located_resources = self.simulation.located_resources.lock().unwrap();
             located_resources.len()
@@ -84,11 +85,7 @@ impl Application for MapWindow {
         );
 
         let toggle_simulation_state = || -> Message {
-            match self
-                .simulation
-                .running
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
+            match is_running {
                 false => Message::Play,
                 true => Message::Pause,
             }
@@ -97,16 +94,21 @@ impl Application for MapWindow {
         let controls = Column::new()
             .spacing(10)
             .padding(10)
-            .width(Length::FillPortion(2)) 
+            .width(Length::FillPortion(2))
             .push(Text::new(simulation_status).font(self.map_grid.font))
             .push(Space::with_height(20))
-            .push(create_button("Send Explorer", Message::CreateExplorer))
+            .push(create_button(
+                "Send Explorer",
+                Message::SendExplorer,
+                is_running,
+            ))
             .push(Space::with_height(20))
-            .push(create_button("Play/Pause", toggle_simulation_state()))
-            .push(Row::new()
-                .push(create_button("Speed +", Message::UpSpeed))
-                .push(Space::with_width(10))
-                .push(create_button("Speed -", Message::DownSpeed))
+            .push(create_button("Play/Pause", toggle_simulation_state(), true))
+            .push(
+                Row::new()
+                    .push(create_button("Speed +", Message::UpSpeed, true))
+                    .push(Space::with_width(10))
+                    .push(create_button("Speed -", Message::DownSpeed, true)),
             );
 
         let map = self.map_grid.view().map(|_| Message::Tick);
@@ -114,7 +116,7 @@ impl Application for MapWindow {
         Container::new(
             Row::new()
                 .push(Container::new(map).width(Length::FillPortion(8)))
-                .push(controls)
+                .push(controls),
         )
         .width(Length::Fill)
         .height(Length::Fill)

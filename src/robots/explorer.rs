@@ -1,20 +1,22 @@
 use super::robot::{Robot, RobotState, RobotType};
 use crate::environment::{
     map::Map,
-    tile::{MapTile, TileType, Resource},
+    tile::{Resource, TileType},
 };
 use rand::Rng;
 
 pub struct Explorer {
-    pub x: usize,
-    pub y: usize,
-    pub resource: Option<(usize, usize, Resource)>,
-    pub state: RobotState,
+    id: usize,
+    x: usize,
+    y: usize,
+    resource: Option<(usize, usize, Resource, Option<bool>)>,
+    state: RobotState,
 }
 
 impl Robot for Explorer {
-    fn new(x: usize, y: usize) -> Self {
+    fn new(x: usize, y: usize, id: usize) -> Self {
         Explorer {
+            id: id,
             x: x,
             y: y,
             resource: None,
@@ -24,6 +26,10 @@ impl Robot for Explorer {
 
     fn get_type(&self) -> RobotType {
         RobotType::Explorer
+    }
+
+    fn get_id(&self) -> usize {
+        self.id
     }
 
     fn get_position(&self) -> (usize, usize) {
@@ -54,9 +60,12 @@ impl Robot for Explorer {
             _ => {}
         }
     }
-    fn get_current_resource(&self) -> Option<(usize, usize, Resource)> {
+
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource, Option<bool>)> {
         self.resource
     }
+
+    fn set_target_resource(&mut self, _: Option<(usize, usize, Resource, Option<bool>)>) {}
 }
 
 impl Explorer {
@@ -78,7 +87,7 @@ impl Explorer {
             Some(map_tile) => {
                 match map_tile.tile {
                     TileType::Resource(resource) => {
-                        self.resource = Some((map_tile.x, map_tile.y, resource));
+                        self.resource = Some((map_tile.x, map_tile.y, resource, None));
                         print!("Explorer found a resource at ({}, {})\n", new_x, new_y);
                         self.set_state(RobotState::ReturningToBase);
                     }
