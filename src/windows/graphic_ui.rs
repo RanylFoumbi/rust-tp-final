@@ -29,7 +29,13 @@ impl Application for MapWindow {
     type Flags = Simulation;
 
     fn new(simulation: Simulation) -> (Self, Command<Message>) {
-        let bas_font = Font::with_name("Segoe UI Emoji");
+        let bas_font = if cfg!(target_os = "windows") {
+            Font::with_name("Segoe UI Emoji")
+        } else if cfg!(target_os = "macos") {
+            Font::with_name("Apple Color Emoji")
+        } else {
+            Font::with_name("Noto Color Emoji")
+        };
         let map_grid = MapGrid::new(simulation.map.clone(), bas_font);
 
         (
