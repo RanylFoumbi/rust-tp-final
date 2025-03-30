@@ -103,7 +103,7 @@ impl Application for MapWindow {
             .spacing(10)
             .padding(10)
             .width(Length::FillPortion(2))
-            .push(Text::new(simulation_status).font(self.map_grid.font))
+            .push(Text::new(simulation_status).font(Font::with_name("Segoe UI Emoji")))
             .push(Space::with_height(20))
             .push(create_button(
                 "Send Explorer",
