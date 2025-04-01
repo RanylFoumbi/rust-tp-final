@@ -1,7 +1,7 @@
 use super::robot::{Robot, RobotState, RobotType};
 use crate::environment::{
     map::Map,
-    tile::{Resource, TileType},
+    tile::{MapTile, Resource, TileType},
 };
 use rand::Rng;
 
@@ -9,7 +9,7 @@ pub struct Explorer {
     id: usize,
     x: usize,
     y: usize,
-    resource: Option<(usize, usize, Resource, Option<bool>)>,
+    resource: Option<(usize, usize, Resource, bool)>,
     state: RobotState,
 }
 
@@ -61,11 +61,11 @@ impl Robot for Explorer {
         }
     }
 
-    fn get_current_resource(&self) -> Option<(usize, usize, Resource, Option<bool>)> {
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource, bool)> {
         self.resource
     }
 
-    fn set_target_resource(&mut self, _: Option<(usize, usize, Resource, Option<bool>)>) {}
+    fn set_target_resource(&mut self, _: Option<(usize, usize, Resource, bool)>) {}
 }
 
 impl Explorer {
@@ -75,27 +75,24 @@ impl Explorer {
         let move_horizontal = rng.random_bool(0.5);
 
         let (direction_x, direction_y) = if move_horizontal {
-            (if rng.random_bool(0.5) { 1 } else { -1 }, 0)
+            (if rng.random_bool(0.5) { 1isize } else { -1isize }, 0isize)
         } else {
-            (0, if rng.random_bool(0.5) { 1 } else { -1 })
+            (0isize, if rng.random_bool(0.5) { 1isize } else { -1isize })
         };
 
-        let new_x = (self.x as i32 + direction_x).clamp(0, (map.width - 1) as i32) as usize;
-        let new_y = (self.y as i32 + direction_y).clamp(0, (map.height - 1) as i32) as usize;
+        let new_x = (self.x as isize + direction_x).max(0) as usize;
+        let new_y = (self.y as isize + direction_y).max(0) as usize;
 
-        match self.move_to(new_x, new_y, map) {
-            Some(map_tile) => {
-                match map_tile.tile {
-                    TileType::Resource(resource) => {
-                        self.resource = Some((map_tile.x, map_tile.y, resource, None));
-                        print!("Explorer found a resource at ({}, {})\n", new_x, new_y);
-                        self.set_state(RobotState::ReturningToBase);
-                    }
-                    _ => {}
+        if new_x <= map.width && new_y <= map.height {
+            match map.get(new_x, new_y).tile {
+                TileType::Resource(resource) => {
+                    self.resource = Some((new_x, new_y, resource, true));
+                    self.set_state(RobotState::ReturningToBase);
                 }
-                self.set_position(new_x, new_y);
+                _ => {
+                    self.move_to(new_x, new_y, map);
+                }
             }
-            None => {}
         }
     }
 }

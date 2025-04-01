@@ -72,9 +72,17 @@ impl Map {
                 let noise_value =
                     perlin.get([x as f64 / RESOURCE_SCALE, y as f64 / RESOURCE_SCALE]);
                 if noise_value > THRESHOLD && rng.random_bool(RESOURCE_PROBABILITY) {
-                    self.set(MapTile::new(x, y, TileType::Resource(Resource::new(10, ResourceType::Energy))));
+                    self.set(MapTile::new(
+                        x,
+                        y,
+                        TileType::Resource(Resource::new(10, ResourceType::Energy)),
+                    ));
                 } else if noise_value > THRESHOLD && rng.random_bool(RESOURCE_PROBABILITY) {
-                    self.set(MapTile::new(x, y, TileType::Resource(Resource::new(10, ResourceType::Mineral))));
+                    self.set(MapTile::new(
+                        x,
+                        y,
+                        TileType::Resource(Resource::new(10, ResourceType::Mineral)),
+                    ));
                 }
             }
         }
@@ -82,12 +90,17 @@ impl Map {
 
     fn place_science_base(&mut self) {
         let mut rng = rand::rng();
-    
+
         loop {
-            let x = rng.random_range(1..self.width-1); 
-            let y = rng.random_range(1..self.height-1);
-    
-            if self.get(x, y).tile == TileType::Empty {
+            let x = rng.random_range(1..self.width - 1);
+            let y = rng.random_range(1..self.height - 1);
+
+            if self.get(x, y).tile == TileType::Empty
+                && self.get(x - 1, y).tile == TileType::Empty
+                && self.get(x + 1, y).tile == TileType::Empty
+                && self.get(x, y - 1).tile == TileType::Empty
+                && self.get(x, y + 1).tile == TileType::Empty
+            {
                 self.set(MapTile::new(x, y, TileType::Base));
                 self.base_position = (x, y);
                 break;
@@ -96,7 +109,6 @@ impl Map {
     }
 
     pub fn is_valid(&self, x: usize, y: usize) -> bool {
-        x < self.width && y < self.height && (self.get(x, y).tile == TileType::Empty 
-        || matches!(self.get(x, y).tile, TileType::Resource(_)))
+        x < self.width && y < self.height && (self.get(x, y).tile == TileType::Empty)
     }
 }

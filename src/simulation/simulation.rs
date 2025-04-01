@@ -1,5 +1,5 @@
 use crate::environment::map::Map;
-use crate::environment::tile::Resource;
+use crate::environment::tile::{MapTile, Resource, TileType};
 use crate::robots::robot::{RobotState, RobotType};
 use crate::robots::{explorer::Explorer, harvester::Harvester, robot::Robot};
 use crate::windows::utils::open_window;
@@ -24,8 +24,8 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn new() -> Self {
-        let map = Arc::new(RwLock::new(Map::new(25, 25, 8)));
+    pub fn new(map_seed: u32) -> Self {
+        let map = Arc::new(RwLock::new(Map::new(25, 25, map_seed)));
 
         Simulation {
             map,
@@ -161,7 +161,7 @@ impl Simulation {
                                 res_x,
                                 res_y,
                                 resource,
-                                Some(true),
+                                true,
                             )));
                         });
                     }
@@ -180,7 +180,7 @@ impl Simulation {
                     }
 
                     match remind {
-                        Some(true) => robot.set_state(RobotState::Harvesting),
+                        true => robot.set_state(RobotState::Harvesting),
                         _ => self.join_thread(robot),
                     }
                 }
@@ -189,6 +189,11 @@ impl Simulation {
     }
 
     fn join_thread(&mut self, robot: &mut Box<dyn Robot + Send>) {
+        self.map.write().unwrap().set(MapTile::new(
+            robot.get_position().0,
+            robot.get_position().1,
+            TileType::Empty,
+        ));
         robot.set_state(RobotState::Idle);
     }
 }

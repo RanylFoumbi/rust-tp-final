@@ -10,7 +10,7 @@ pub struct Harvester {
     y: usize,
     cargo_capacity: u32,
     state: RobotState,
-    target_resource: Option<(usize, usize, Resource, Option<bool>)>,
+    target_resource: Option<(usize, usize, Resource, bool)>,
 }
 
 impl Robot for Harvester {
@@ -48,7 +48,7 @@ impl Robot for Harvester {
         self.y = y;
     }
 
-    fn get_current_resource(&self) -> Option<(usize, usize, Resource, Option<bool>)> {
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource, bool)> {
         if let Some((x, y, resource, remind)) = self.target_resource {
             Some((x, y, resource, remind))
         } else {
@@ -56,7 +56,7 @@ impl Robot for Harvester {
         }
     }
 
-    fn set_target_resource(&mut self, target: Option<(usize, usize, Resource, Option<bool>)>) {
+    fn set_target_resource(&mut self, target: Option<(usize, usize, Resource, bool)>) {
         self.target_resource = target;
     }
 
@@ -79,44 +79,41 @@ impl Harvester {
             let step = self.calculate_next_step(x, y, map);
             match step {
                 Some((next_x, next_y)) => {
-                    if next_x == x && next_y == y {
-                        let tile = map.get(x, y);
-                        match tile.tile {
-                            TileType::Resource(res) => {
-                                if res.scale > self.cargo_capacity {
-                                    self.set_target_resource(Some((
-                                        x,
-                                        y,
-                                        Resource::new(self.cargo_capacity, res.resource_type),
-                                        Some(true),
-                                    )));
-                                    map.set(MapTile::new(
-                                        x,
-                                        y,
-                                        TileType::Resource(Resource::new(
-                                            res.scale - self.cargo_capacity,
-                                            res.resource_type,
-                                        )),
-                                    ));
-                                } else {
-                                    self.set_target_resource(Some((
-                                        x,
-                                        y,
-                                        Resource::new(res.scale, res.resource_type),
-                                        Some(false),
-                                    )));
-                                    map.set(MapTile::new(x, y, TileType::Empty));
-                                }
-                            }
-                            _ => {}
-                        }
-                        self.set_state(RobotState::ReturningToBase);
-                    } else {
-                        self.move_to(next_x, next_y, map);
-                        self.set_position(next_x, next_y);
-                    }
+                    self.move_to(next_x, next_y, map);
                 }
-                None => {}
+                None => {
+                    let tile = map.get(x, y);
+                    match tile.tile {
+                        TileType::Resource(res) => {
+                            if res.scale > self.cargo_capacity {
+                                self.set_target_resource(Some((
+                                    x,
+                                    y,
+                                    Resource::new(self.cargo_capacity, res.resource_type),
+                                    true,
+                                )));
+                                map.set(MapTile::new(
+                                    x,
+                                    y,
+                                    TileType::Resource(Resource::new(
+                                        res.scale - self.cargo_capacity,
+                                        res.resource_type,
+                                    )),
+                                ));
+                            } else {
+                                self.set_target_resource(Some((
+                                    x,
+                                    y,
+                                    Resource::new(res.scale, res.resource_type),
+                                    false,
+                                )));
+                                map.set(MapTile::new(x, y, TileType::Empty));
+                            }
+                        }
+                        _ => {}
+                    }
+                    self.set_state(RobotState::ReturningToBase);
+                }
             }
         }
     }

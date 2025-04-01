@@ -33,29 +33,25 @@ pub trait Robot: Any {
     fn set_state(&mut self, state: RobotState);
     fn get_type(&self) -> RobotType;
     fn update(&mut self, map: &mut Map);
-    fn get_current_resource(&self) -> Option<(usize, usize, Resource, Option<bool>)>;
-    fn set_target_resource(&mut self, target_resource: Option<(usize, usize, Resource, Option<bool>)>);
+    fn get_current_resource(&self) -> Option<(usize, usize, Resource, bool)>;
+    fn set_target_resource(&mut self, target_resource: Option<(usize, usize, Resource, bool)>);
 
-    fn move_to(&mut self, x: usize, y: usize, map: &mut Map) -> Option<MapTile> {
+    fn move_to(&mut self, x: usize, y: usize, map: &mut Map) {
         if map.is_valid(x, y) {
-            let prev_tile = map.get(x, y);
             let (old_x, old_y) = self.get_position();
-            if map.get(old_x, old_y).tile == TileType::Robot(self.get_type()) {
+            let (base_x, base_y) = map.base_position;
+
+            if old_x == base_x && old_y == base_y {
+                map.set(MapTile::new(old_x, old_y, TileType::Base));
+            } else {
                 map.set(MapTile::new(old_x, old_y, TileType::Empty));
             }
-            match prev_tile.tile {
-                TileType::Resource(_) if self.get_type() == RobotType::Explorer => {
-                    if let Some((x, y, resource, _)) = self.get_current_resource() {
-                        map.set(MapTile::new(x, y, TileType::Resource(resource)));
-                    }
-                }
-                _ => {
-                    map.set(MapTile::new(x, y, TileType::Robot(self.get_type())));
-                }
-            }
-            Some(prev_tile)
+
+            map.set(MapTile::new(x, y, TileType::Robot(self.get_type())));
+
+            self.set_position(x, y);
         } else {
-            None
+            eprintln!("Invalid move to position ({}, {})", x, y);
         }
     }
 
@@ -69,78 +65,73 @@ pub trait Robot: Any {
         if start_x == target_x && start_y == target_y {
             return None;
         }
-
+    
         let mut queue = VecDeque::new();
         let mut came_from = HashMap::new();
-
+    
         queue.push_back((start_x, start_y));
         came_from.insert((start_x, start_y), None);
-
+    
         while let Some((x, y)) = queue.pop_front() {
             if x == target_x && y == target_y {
                 break;
             }
-
+    
+            // Se déplacer uniquement en ligne droite (haut, bas, gauche, droite)
             for &(dx, dy) in &[(0, 1), (1, 0), (0, -1), (-1, 0)] {
                 let new_x = x as isize + dx;
                 let new_y = y as isize + dy;
-
+    
                 if new_x < 0 || new_y < 0 {
                     continue;
                 }
-
+    
                 let new_x = new_x as usize;
                 let new_y = new_y as usize;
-
+    
                 if map.is_valid(new_x, new_y) && !came_from.contains_key(&(new_x, new_y)) {
-                    let tile = map.get(new_x, new_y);
-                    if tile.tile != TileType::Terrain {
-                        queue.push_back((new_x, new_y));
-                        came_from.insert((new_x, new_y), Some((x, y)));
-                    }
+                    queue.push_back((new_x, new_y));
+                    came_from.insert((new_x, new_y), Some((x, y)));
                 }
             }
         }
-
+    
         if !came_from.contains_key(&(target_x, target_y)) {
-            let step_x = if start_x < target_x {
-                start_x + 1
-            } else if start_x > target_x {
-                start_x - 1
-            } else {
-                start_x
-            };
-            let step_y = if start_y < target_y {
-                start_y + 1
-            } else if start_y > target_y {
-                start_y - 1
-            } else {
-                start_y
-            };
-            if map.is_valid(step_x, step_y) {
-                let tile = map.get(step_x, step_y);
-                if tile.tile != TileType::Terrain {
-                    return Some((step_x, step_y));
+            // Essayer toutes les directions possibles jusqu'à en trouver une valide
+            let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+            for &(dx, dy) in &directions {
+                let new_x = start_x as isize + dx;
+                let new_y = start_y as isize + dy;
+    
+                if new_x >= 0 && new_y >= 0 {
+                    let new_x = new_x as usize;
+                    let new_y = new_y as usize;
+                    if map.is_valid(new_x, new_y) {
+                        return Some((new_x, new_y));
+                    }
                 }
             }
             return None;
         }
-
+    
         let mut path = Vec::new();
         let mut current = Some((target_x, target_y));
-
+    
         while let Some(pos) = current {
             path.push(pos);
             current = came_from.get(&pos).cloned().flatten();
         }
-
+    
         path.reverse();
-        if path.len() > 1 {
+        if path.len() > 2 {
             Some(path[1])
         } else {
             None
         }
     }
+    
+    
+    
 
     fn set_position(&mut self, x: usize, y: usize);
 
@@ -150,12 +141,9 @@ pub trait Robot: Any {
         match self.calculate_next_step(base_x, base_y, map) {
             Some((x, y)) => {
                 self.move_to(x, y, map);
-                self.set_position(x, y);
             }
             None => {
                 self.set_state(RobotState::Reporting);
-                let position = self.get_position();
-                map.set(MapTile::new(position.0, position.1, TileType::Empty));
             }
         }
     }
